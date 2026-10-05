@@ -1,4 +1,4 @@
-# React Native Architecture & Internals — Interview Guide (Document 1)
+# React Native Architecture & Internals — Interview Guide
 
 > Deep-dive reference covering the Bridge, JSI, TurboModules, Fabric, React reconciliation/Fiber, the RN rendering pipeline, and Hermes — written for interview preparation. Facts cross-checked against the official React Native architecture docs (reactnative.dev/architecture) and the Hermes repo.
 
