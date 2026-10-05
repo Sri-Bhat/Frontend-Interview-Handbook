@@ -1,4 +1,4 @@
-# React Native Native Integration — Interview Guide (Document 3)
+# React Native Native Integration — Interview Guide
 
 > Deep-dive reference covering Native Modules, Native Components, platform-specific code, and Codegen — written for interview preparation. Mechanically overlaps with [Document 1 (Architecture & Internals)](01-architecture-and-internals.md), which this guide cross-references rather than repeats; this document focuses on the practical "how/when/why do I integrate with native code" angle. Facts verified against the official React Native docs. Implementation-level native code is kept intentionally light — the goal is to reason correctly about the concepts, not memorize native syntax.
 
