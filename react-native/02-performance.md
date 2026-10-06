@@ -1,4 +1,4 @@
-# React Native Performance — Interview Guide (Document 2)
+# React Native Performance — Interview Guide
 
 > Deep-dive reference covering the performance checklist, FlatList/large-list tuning, re-render prevention, memory leaks, and image optimization — written for interview preparation. Facts cross-checked against the official React Native performance/FlatList docs and the official React docs for `memo`/`useMemo`/`useCallback`.
 
