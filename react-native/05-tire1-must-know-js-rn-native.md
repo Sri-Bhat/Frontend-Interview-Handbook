@@ -200,9 +200,9 @@ flowchart LR
         NM["Native Module Thread(s)"]
     end
     JS["JS Thread<br/>(single-threaded VM: Hermes/JSC)"]
-    JS <-->|Bridge (async, serialized) / JSI (direct)| UI
-    JS <-->|layout requests| Shadow
-    JS <-->|module calls| NM
+    JS <-->|"Bridge (async, serialized) / JSI (direct)"| UI
+    JS <-->|"layout requests"| Shadow
+    JS <-->|"module calls"| NM
 ```
 
 So the precise, senior-level answer is: **JavaScript execution in React Native is single-threaded (one JS thread, one call stack), but the React Native application as a whole is inherently multi-threaded** — which is exactly why a blocked JS thread can freeze new UI updates while already-running native animations keep animating smoothly (Q16–18).
