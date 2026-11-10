@@ -27,6 +27,7 @@ Deep-dive guides for senior React interviews, verified against the official reac
 
 - React Native internals and performance: [react-native/](../react-native/README.md) (Tier 6 covers React internals in RN).
 - JavaScript fundamentals used heavily here (closures, event loop, async): [js/03-advanced-fundamentals-and-coding.md](../js/03-advanced-fundamentals-and-coding.md).
+- TypeScript for React (React 19 type changes, typed hooks/context, data layers): [typescript/05-typescript-with-react-and-apis.md](../typescript/05-typescript-with-react-and-apis.md).
 
 ## Version Notes
 
