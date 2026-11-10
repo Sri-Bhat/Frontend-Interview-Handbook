@@ -1,5 +1,7 @@
 # React Native Senior Interview Q&A Handbook (Tier 6 — React Internals in React Native)
 
+> **Web React counterpart:** the same engine on the DOM is covered in [react/01-rendering-model-and-reconciliation.md](../react/01-rendering-model-and-reconciliation.md) (Fiber, lanes, commit phases), [react/02-hooks-deep-dive.md](../react/02-hooks-deep-dive.md) (effect timing) and [react/03-concurrent-react-suspense-and-transitions.md](../react/03-concurrent-react-suspense-and-transitions.md) (transitions, Suspense).
+
 > Tier 6 of the running, tiered senior React Native interview Q&A series — see [Tier 1](05-tire1-must-know-js-rn-native.md) for JS/RN/Native foundations, [Tier 2](06-tire2-old-vs-new-architecture.md) for Bridge/JSI/Fabric, [Tier 4](08-tire4-performance-internals.md) for performance internals, and [Tier 5](09-tire5-javascript-internals.md) for JavaScript-language internals. This tier goes deep on **React itself** — reconciliation, Fiber, concurrent rendering, and the render/commit split — and specifically how those React-core mechanics map onto React Native's Fabric pipeline rather than the browser DOM. Most of the RN-specific mechanics here were already laid down in [Document 1 §9/§12/§13](01-architecture-and-internals.md#9-fabric) and [Tier 2 Q21–30](06-tire2-old-vs-new-architecture.md#21-why-was-fabric-introduced); this tier extends that material into the `useEffect`/`useLayoutEffect`/`useInsertionEffect` timing questions, which are new ground verified directly against React's official docs this session.
 
 ## Table of Contents
