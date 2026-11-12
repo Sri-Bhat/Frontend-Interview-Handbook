@@ -24,6 +24,7 @@ Production-oriented frontend system design interview preparation for Senior Fron
 
 ## Related Material
 
+- Web performance fundamentals behind the performance sections of every case study: [web-performance/](../web-performance/README.md)
 - React internals and performance: [react/](../react/README.md) (virtualisation, transitions, Server Components, state/data fetching)
 - TypeScript patterns for API boundaries and design systems: [typescript/](../typescript/README.md)
 - Mobile counterpart: [react-native/](../react-native/README.md)
