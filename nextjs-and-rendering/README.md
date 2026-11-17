@@ -30,6 +30,7 @@ Production-oriented Next.js (App Router) and rendering-strategy interview prepar
 - Browser internals (navigation, rendering pipeline, cookies/storage, security model): [browser-internals/](../browser-internals/README.md)
 - React internals: [react/](../react/README.md) (especially [Server Components](../react/05-server-components-and-server-functions.md) and [concurrent React](../react/03-concurrent-react-suspense-and-transitions.md))
 - Web security beyond the framework (CSP nonces, CSRF, BFF/OAuth, headers, supply chain): [web-security/](../web-security/README.md)
+- HTTP, Fetch, API design and resilience beneath Next.js data fetching: [networking-and-apis/](../networking-and-apis/README.md)
 - TypeScript for React/APIs: [typescript/](../typescript/README.md)
 - Architecture interviews: [system-design/](../system-design/README.md)
 - Mobile counterpart: [react-native/](../react-native/README.md)
