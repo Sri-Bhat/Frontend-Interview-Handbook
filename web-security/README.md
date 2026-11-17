@@ -32,6 +32,7 @@ Production-oriented web security interview preparation for Senior Frontend, Staf
 - React Server Components and Server Functions as public endpoints: [react/05](../react/05-server-components-and-server-functions.md)
 - Third-party script performance and governance: [web-performance/06](../web-performance/06-images-fonts-media-and-third-parties.md)
 - Applying these in design interviews (chat, collaborative editor, dashboards): [system-design/](../system-design/README.md)
+- HTTP, Fetch, CORS-adjacent API design, real-time transports and network debugging: [networking-and-apis/](../networking-and-apis/README.md)
 - Mobile counterpart: [react-native/](../react-native/README.md)
 
 ## Version Notes
