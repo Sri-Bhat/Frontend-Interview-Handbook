@@ -29,6 +29,7 @@ Production-oriented browser internals interview preparation for Senior Frontend,
 - Framework-level rendering and security built on top: [nextjs-and-rendering/](../nextjs-and-rendering/README.md), [react/](../react/README.md)
 - JavaScript language fundamentals (closures, `this`, prototypes, async): [js/03](../js/03-advanced-fundamentals-and-coding.md)
 - Applying these in design interviews: [system-design/](../system-design/README.md)
+- Application-level security built on this browser security model (XSS, CSP, CSRF, OAuth/BFF, supply chain): [web-security/](../web-security/README.md)
 
 ## Version Notes
 
