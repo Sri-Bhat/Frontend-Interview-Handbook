@@ -30,6 +30,7 @@ Production-oriented web performance interview preparation for Senior Frontend, S
 - Performance in design interviews: [system-design/](../system-design/README.md)
 - Mobile counterpart: [react-native/](../react-native/README.md)
 - Browser mechanics behind these metrics (pipeline, event loop, storage, security): [browser-internals/](../browser-internals/README.md)
+- Third-party script risk and CSP/headers trade-offs: [web-security/](../web-security/README.md)
 
 ## Version Notes
 
