@@ -28,6 +28,7 @@ Deep-dive guides for senior React interviews, verified against the official reac
 - Browser-level performance (metrics, main thread, rendering, delivery): [web-performance/](../web-performance/README.md).
 - Browser internals (event loop, rendering pipeline, events, storage, security): [browser-internals/](../browser-internals/README.md).
 - Web security (XSS and Trusted Types, CSP, CSRF, auth/BFF, Server Functions as public endpoints): [web-security/](../web-security/README.md).
+- Networking and API layers beneath data fetching (Fetch, REST/GraphQL, retries, real-time, API client architecture): [networking-and-apis/](../networking-and-apis/README.md).
 - React Native internals and performance: [react-native/](../react-native/README.md) (Tier 6 covers React internals in RN).
 - JavaScript fundamentals used heavily here (closures, event loop, async): [js/03-advanced-fundamentals-and-coding.md](../js/03-advanced-fundamentals-and-coding.md).
 - TypeScript for React (React 19 type changes, typed hooks/context, data layers): [typescript/05-typescript-with-react-and-apis.md](../typescript/05-typescript-with-react-and-apis.md).
