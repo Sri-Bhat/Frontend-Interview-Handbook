@@ -30,6 +30,7 @@ Production-oriented browser internals interview preparation for Senior Frontend,
 - JavaScript language fundamentals (closures, `this`, prototypes, async): [js/03](../js/03-advanced-fundamentals-and-coding.md)
 - Applying these in design interviews: [system-design/](../system-design/README.md)
 - Application-level security built on this browser security model (XSS, CSP, CSRF, OAuth/BFF, supply chain): [web-security/](../web-security/README.md)
+- HTTP semantics, Fetch, API design, real-time transports and network debugging: [networking-and-apis/](../networking-and-apis/README.md)
 
 ## Version Notes
 
