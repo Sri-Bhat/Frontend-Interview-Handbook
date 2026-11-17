@@ -20,8 +20,9 @@ Production-oriented interview preparation for Senior Frontend, Senior React, Rea
 | Next.js & Rendering (App Router, caching, PPR, security, performance, deployment) | [nextjs-and-rendering/README.md](nextjs-and-rendering/README.md) · [recall map](nextjs-and-rendering/09-nextjs-recall-map.md) | Complete |
 | Web Performance (CWV, loading, delivery, INP, rendering/CLS, assets, budgets) | [web-performance/README.md](web-performance/README.md) · [recall map](web-performance/08-web-performance-recall-map.md) | Complete |
 | Browser Internals (architecture, navigation, rendering, JS runtime, storage, security, DOM/events) | [browser-internals/README.md](browser-internals/README.md) · [recall map](browser-internals/08-browser-internals-recall-map.md) | Complete |
+| Web Security (threat model, XSS/Trusted Types, CSP, cookies/CSRF, auth/BFF, headers/CORS, supply chain, secure patterns) | [web-security/README.md](web-security/README.md) · [recall map](web-security/09-web-security-recall-map.md) | Complete |
 | React Native | [react-native/README.md](react-native/README.md) · [recall map](react-native/17-master-mental-model-recall-map.md) | Existing |
 | JavaScript | [js/01](js/01-arrays-objects-collections-and-modern-syntax.md) · [js/02](js/02-frontend-specific-coding.md) · [js/03](js/03-advanced-fundamentals-and-coding.md) | Existing |
 | DSA for frontend | [dsa-for-fe/](dsa-for-fe/01-hashmap-pattern.md) · [dsa-topics/](dsa-topics/01-array-problems.md) | Existing |
 
-Planned categories: Web Security, Networking & APIs, Testing, Frontend Architecture, HTML & CSS, Accessibility, Debugging Scenarios, Leadership, CI/CD (web).
+Planned categories: Networking & APIs, Testing, Frontend Architecture, HTML & CSS, Accessibility, Debugging Scenarios, Leadership, CI/CD (web).
