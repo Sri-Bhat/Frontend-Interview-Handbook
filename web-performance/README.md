@@ -29,6 +29,7 @@ Production-oriented web performance interview preparation for Senior Frontend, S
 - React rendering performance: [react/08](../react/08-react-performance-optimization.md) and [react/03](../react/03-concurrent-react-suspense-and-transitions.md)
 - Performance in design interviews: [system-design/](../system-design/README.md)
 - Mobile counterpart: [react-native/](../react-native/README.md)
+- Browser mechanics behind these metrics (pipeline, event loop, storage, security): [browser-internals/](../browser-internals/README.md)
 
 ## Version Notes
 
