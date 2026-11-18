@@ -1,6 +1,6 @@
 # React Native Performance: Rendering, Lists, Images and Memory
 
-> Verification note: Core guidance follows the official **React Native performance docs** (Performance overview, Optimizing FlatList configuration, Images, Dimensions) and the **react.dev** references for `memo`, `useMemo` and `useCallback`. Version-sensitive facts were verified in the **reactnative.dev release posts (Nov 2026)**: the Android **`debugOptimized`** build type (introduced in 0.82, backported to 0.81/Expo SDK 54; an animation sample ran ≈60 FPS vs ≈20 FPS in plain debug; C++ debugging is not available in it); **Web Performance APIs** (`performance.now`, `PerformanceObserver`, User Timing, Event Timing, **Long Tasks**) are **stable since 0.83**; the new **Animation Backend** is covered in [06](06-startup-bundle-animations-and-gestures.md); **`InteractionManager` was removed in 0.87** (use `requestIdleCallback`); the Expo SDK 58 notes list recycling lists in Expo UI (`List`, `LazyColumn`) and `expo-image` options (`transition.skipOnCacheHit`, `svgVariables`). **FlashList/Legend List recycling behaviour, `expo-image` caching semantics, image-format advice, profiler tool names and capability details, React Compiler enablement per project and numeric thresholds (e.g. "~1 ms is worth memoising") are established practice not re-fetched in this session — marked *(hedged)* where specific.** Always profile **release** builds. Startup/bundle/animation performance: [06](06-startup-bundle-animations-and-gestures.md); network performance: [09](09-networking-storage-and-offline.md); runtime/thread basics: [01](01-javascript-runtime-hermes-and-event-loop.md).
+> Verification note: Core guidance follows the official **React Native performance docs** (Performance overview, Optimizing FlatList configuration, Images, Dimensions) and the **react.dev** references for `memo`, `useMemo` and `useCallback`. Version-sensitive facts were verified in the **reactnative.dev release posts (Nov 2026)**: the Android **`debugOptimized`** build type (introduced in 0.82, backported to 0.81/Expo SDK 54; an animation sample ran ≈60 FPS vs ≈20 FPS in plain debug; C++ debugging is not available in it); **Web Performance APIs** (`performance.now`, `PerformanceObserver`, User Timing, Event Timing, **Long Tasks**) are **stable since 0.83**; the new **Animation Backend** is covered in [06](06-startup-bundle-animations-and-gestures.md); **`InteractionManager` was removed in 0.87** (use `requestIdleCallback`); the Expo SDK 58 notes list recycling lists in Expo UI (`List`, `LazyColumn`) and `expo-image` options (`transition.skipOnCacheHit`, `svgVariables`). **FlashList/Legend List recycling behavior, `expo-image` caching semantics, image-format advice, profiler tool names and capability details, React Compiler enablement per project and numeric thresholds (e.g. "~1 ms is worth memoizing") are established practice not re-fetched in this session — marked *(hedged)* where specific.** Always profile **release** builds. Startup/bundle/animation performance: [06](06-startup-bundle-animations-and-gestures.md); network performance: [09](09-networking-storage-and-offline.md); runtime/thread basics: [01](01-javascript-runtime-hermes-and-event-loop.md).
 
 ## Table of Contents
 
@@ -29,8 +29,8 @@
 - Performance work protects **two frame budgets** (~16.67 ms at 60 fps): the **JS thread** (React render, logic, touch handling) and the **UI thread** (layout, drawing, gestures). Diagnose **which** thread is dropping frames first.
 - Most problems are one of: **JS doing too much** (renders, transforms), **UI doing too much** (too many views, overdraw, layout animation), **memory growth** (leaks, huge images, unbounded caches), or **too much work too early** ([06](06-startup-bundle-animations-and-gestures.md)).
 - **Measure first**, in a **release build** (dev mode is always slower): Perf Monitor (JS vs UI fps), React DevTools Profiler, Hermes sampling profiler, Android Studio Profiler / Xcode Instruments, Long Tasks via `PerformanceObserver`.
-- **Re-render control:** colocate state, stabilise props, `memo` rows, memoise context values and use selectors; **React Compiler** automates much of it where enabled. Memoise only what you measured.
-- **Lists:** never `ScrollView.map()` long data; use `FlatList` (tuned) or a **recycling** list (FlashList-style); stable `keyExtractor`, hoisted `renderItem`, memoised light rows, `getItemLayout` for fixed rows.
+- **Re-render control:** colocate state, stabilize props, `memo` rows, memoize context values and use selectors; **React Compiler** automates much of it where enabled. Memoize only what you measured.
+- **Lists:** never `ScrollView.map()` long data; use `FlatList` (tuned) or a **recycling** list (FlashList-style); stable `keyExtractor`, hoisted `renderItem`, memoized light rows, `getItemLayout` for fixed rows.
 - **Images:** decoded memory is a function of **pixel dimensions**, not file size — serve right-sized thumbnails, cache with bounds, lazy load, prefer a dedicated image library.
 - **Leaks:** everything subscribed to in an effect must be undone in cleanup; cancel async work; clean up on **blur** as well as unmount; release native resources.
 
@@ -74,9 +74,9 @@ flowchart TD
 2. **Check the JS thread** — which FPS counter drops during the janky interaction?
 3. **Check re-renders** — React DevTools Profiler (ranked/flamegraph), `why-did-you-render` *(hedged)*; look for unstable props and wide subscriptions.
 4. **Check list configuration** — `windowSize`, `initialNumToRender`, `maxToRenderPerBatch`, `getItemLayout`, `keyExtractor`.
-5. **Check the row component** — memoised? light? doing formatting/nested lists per row?
+5. **Check the row component** — memoized? light? doing formatting/nested lists per row?
 6. **Check images** — right-sized, cached, decoded off the JS thread?
-7. **Check data transformation** — sort/filter/map inline in render vs memoised/once at fetch time.
+7. **Check data transformation** — sort/filter/map inline in render vs memoized/once at fetch time.
 8. **Measure again** — change one variable at a time.
 
 **Tool map** *(hedged on UI details)*
@@ -96,7 +96,7 @@ flowchart TD
 
 ## 4. Preventing Unnecessary Re-renders
 
-**Why components re-render:** by default whenever their **parent** does; also own state, consumed context and store subscriptions ([03](03-react-internals-and-rendering-in-react-native.md#3-why-components-re-render)). Because object/array/function literals are **new references each render**, passing them to a memoised child defeats `memo` — the root of most "why does my memoised component still re-render?" bugs.
+**Why components re-render:** by default whenever their **parent** does; also own state, consumed context and store subscriptions ([03](03-react-internals-and-rendering-in-react-native.md#3-why-components-re-render)). Because object/array/function literals are **new references each render**, passing them to a memoized child defeats `memo` — the root of most "why does my memoized component still re-render?" bugs.
 
 | API | Caches | Use when |
 |---|---|---|
@@ -120,10 +120,10 @@ function ProductList({ products }: { products: Product[] }) {
 **Facts worth knowing**
 - `memo` still re-renders on **own state or consumed context** changes; a custom comparator can cost more than re-rendering.
 - `useMemo` does **not** speed the first render; React may discard cached values, so never depend on it for correctness.
-- **When `useMemo` makes things worse:** the computation is cheaper than the bookkeeping, dependencies change every render, the consumer isn't memoised, a slow deep-equality comparator, or relying on it for side-effect guarantees.
+- **When `useMemo` makes things worse:** the computation is cheaper than the bookkeeping, dependencies change every render, the consumer isn't memoized, a slow deep-equality comparator, or relying on it for side-effect guarantees.
 - **Structural fixes first:** keep state local, accept `children` JSX so wrapper state changes don't re-render children, keep render pure.
-- **React Compiler** inserts equivalent memoisation at build time where enabled *(hedged: verify per project)*; understanding reference equality is still tested in interviews.
-- **Context:** memoise the Provider value (`useMemo`) or split contexts; with global stores use **selectors**.
+- **React Compiler** inserts equivalent memoization at build time where enabled *(hedged: verify per project)*; understanding reference equality is still tested in interviews.
+- **Context:** memoize the Provider value (`useMemo`) or split contexts; with global stores use **selectors**.
 
 ---
 
@@ -134,13 +134,13 @@ function ProductList({ products }: { products: Product[] }) {
 - **Derived data in state** creates two sources of truth and an extra render — derive during render.
 - **New object/array on every `setState`** (even when contents are logically unchanged) always re-renders; use updater functions that bail out or compare first.
 - **Unthrottled high-frequency updates** (`setState` per `onScroll` pixel) — throttle/debounce, or drive UI-thread-only effects (parallax/fade) with Reanimated shared values that bypass React renders ([06](06-startup-bundle-animations-and-gestures.md)).
-- **Why thousands of components hurt:** reconciliation walks more fibers; React's commit creates more shadow nodes via JSI; Yoga and the UI thread handle more layout/views ([02](02-architecture-bridge-to-new-architecture.md)) — usually the symptom of an unvirtualised list or needlessly deep tree.
+- **Why thousands of components hurt:** reconciliation walks more fibers; the renderer creates or clones more shadow nodes via JSI; Yoga and the UI thread handle more layout/views ([02](02-architecture-bridge-to-new-architecture.md)) — usually the symptom of an unvirtualized list or needlessly deep tree.
 
 ---
 
 ## 6. Large Lists: FlatList, FlashList and Friends
 
-**Why virtualise:** 5,000 rows as live native views is expensive and eventually impossible; virtualisation mounts only a **window** around the viewport.
+**Why virtualize:** 5,000 rows as live native views is expensive and eventually impossible; virtualization mounts only a **window** around the viewport.
 
 ```mermaid
 flowchart TB
@@ -165,7 +165,7 @@ flowchart TB
 
 Also: **`extraData`** (FlatList is a `PureComponent` — pass external state `renderItem` depends on); **`initialScrollIndex`** requires `getItemLayout`.
 
-**Row best practices:** light components; `memo` rows; cached right-sized images; never define `renderItem` inline; `keyExtractor` stable; avoid nested same-direction virtualised lists.
+**Row best practices:** light components; `memo` rows; cached right-sized images; never define `renderItem` inline; `keyExtractor` stable; avoid nested same-direction virtualized lists.
 
 | Approach | Mounts | Best for |
 |---|---|---|
@@ -183,12 +183,14 @@ With recycling lists, row components must tolerate **reuse**: reset local state 
 - **Pixel dimensions drive decoded memory**, not file size or display size: a 4000×3000 JPEG decodes to tens of MB regardless of compression. Request images close to display size.
 - **Thumbnails:** never fetch a full-resolution image for a 60×60 avatar — use server-resized variants or an image CDN's resize parameters (bytes and decode cost then match the UI).
 - **Caching:** `Image`'s `cache` source property (`default`, `reload`, `force-cache`, `only-if-cached`) controls HTTP-cache use; for persistent disk/memory caching, eviction, placeholders and progressive loading use a dedicated library such as **`expo-image`** *(hedged specifics; SDK 58 adds `transition.skipOnCacheHit` and `svgVariables`)*. Bounded caches only.
-- **Lazy loading** pairs with virtualisation: offscreen rows should not hold decoded images.
+- **Lazy loading** pairs with virtualization: offscreen rows should not hold decoded images.
 - **Formats:** modern compressed formats (WebP; AVIF where supported *(hedged)*) for photos; SVG/vector for icons; avoid unused density variants.
 - **Decoding** happens off the JS/UI threads by default — decode time shows as late-arriving images, not dropped frames, if you handle placeholders.
 - **Network images need explicit `width`/`height`** (no auto-sizing) for layout stability.
 - **Animating image size** (width/height) is expensive on iOS (re-crop/rescale each frame) — animate `transform: [{ scale }]` instead.
 - **Android:** `resizeMethod="resize"` scales during decode (lower peak memory) vs `"scale"` decode-then-scale *(hedged)*.
+- **iOS image cache tuning:** React Native's iOS image loader has an in-memory cache with limits that can be adjusted natively with `RCTSetImageCacheLimits(...)` (called from native app code, e.g. `AppDelegate`) *(hedged: API availability under the New Architecture and your RN version must be checked)*; the default cache can hold many decoded bitmaps in image-heavy feeds, so cap it or use a library with explicit eviction.
+- **Local images:** bundled `require('./img.png')` assets pick a density variant (`@2x`/`@3x`); choose a source slightly larger than the displayed size, not far larger (a variant that is ~50% larger than needed noticeably raises decoded memory and rarely improves visible sharpness).
 
 ---
 
@@ -259,7 +261,7 @@ Request-level resilience (retries, debouncing, deduping) lives in [09](09-networ
 - **Overdraw:** stacked transparent views force repeated GPU blending — flatten/reduce layers.
 - **Animating layout props** (`width`, `top`…) forces Yoga layout per frame — prefer `transform`/`opacity` with the native driver or Reanimated; the **New Animation Backend (0.85)** now lets `Animated` animate layout props natively (experimental) — see [06](06-startup-bundle-animations-and-gestures.md).
 - **Large shadows/blur, huge rounded clips, many absolutely positioned layers** are costly on low-end Android *(hedged)*.
-- **Rasterisation hints:** `shouldRasterizeIOS` / `renderToHardwareTextureAndroid` help repeatedly transformed static views but can spike memory — profile before and after, turn off when the view stops moving.
+- **Rasterization hints:** `shouldRasterizeIOS` / `renderToHardwareTextureAndroid` help repeatedly transformed static views but can spike memory — profile before and after, turn off when the view stops moving.
 - **`LayoutAnimation`** uses native animation and is unaffected by JS frame drops but suits only fire-and-forget animations.
 - **Many JS↔native crossings** (chatty modules, event floods) show up as both FPS counters dropping ([04](04-native-modules-components-and-platform-code.md#8-large-data-and-chatty-boundaries)).
 
@@ -271,17 +273,17 @@ Hypotheses in order:
 1. **Image size** — actual source pixels vs displayed pixels (a 100×100 thumbnail backed by 3000×3000 sources is likely the whole story).
 2. **Memory** — confirm OOM via native logs/profilers; watch memory climb and fail to return while scrolling.
 3. **Caching** — bounded/evicting? A hand-rolled unbounded `{url: base64}` cache, or `force-cache` holding everything? Repeated re-decode from data-URI sources?
-4. **Virtualisation** — `FlatList`/recycling list or `ScrollView.map()` mounting every image? (the most common cause).
+4. **Virtualization** — `FlatList`/recycling list or `ScrollView.map()` mounting every image? (the most common cause).
 5. **Native image handling** — bare `Image` defaults vs a library with downsampling, bounded caches and in-flight cancellation; Android `resizeMethod`.
 
-**Fix list:** serve correctly sized thumbnails; use an image library with bounded caching/downsampling; virtualise the grid (tuned window or recycling); no unbounded custom caches; re-measure memory in a release build to confirm the curve flattens rather than moving the crash later.
+**Fix list:** serve correctly sized thumbnails; use an image library with bounded caching/downsampling; virtualize the grid (tuned window or recycling); no unbounded custom caches; re-measure memory in a release build to confirm the curve flattens rather than moving the crash later.
 
 ---
 
 ## 12. Pitfalls
 
 1. Profiling in dev mode; trusting JS FPS from debug builds.
-2. Memoising everything reflexively (or nothing, on a hot list).
+2. Memoizing everything reflexively (or nothing, on a hot list).
 3. Inline `renderItem`/`keyExtractor`; index keys on dynamic lists; forgetting `extraData`.
 4. `ScrollView.map()` over long data.
 5. Full-resolution images for thumbnails; unbounded caches.
@@ -307,7 +309,7 @@ Hypotheses in order:
 - **What causes unnecessary re-renders?** Parent re-renders, unstable props, broad context/store subscriptions, derived state, unthrottled updates.
 - **`memo` vs `useMemo` vs `useCallback`?** Component output vs value vs function identity.
 - **Does `useMemo` speed the first render?** No.
-- **When does `useMemo` hurt?** Cheap computations, constantly changing deps, unmemoised consumers, slow comparators, correctness reliance.
+- **When does `useMemo` hurt?** Cheap computations, constantly changing deps, unmemoized consumers, slow comparators, correctness reliance.
 - **What does `windowSize` control?** The mount window in viewport heights (default 21).
 - **Why `getItemLayout`?** Skips async measurement; fixed-size rows.
 - **Does `removeClippedSubviews` save memory?** Little: detaches, not deallocates; may bug on iOS.
@@ -323,22 +325,22 @@ Hypotheses in order:
 ## 14. Interview Questions — Senior Scenarios
 
 ### S1. "Our feed scrolls fine on flagship phones but stutters on low-end Android."
-Profile on a low-end device in release: check JS FPS (row render cost, `renderItem` stability, data transforms) vs UI FPS (view count, overdraw, shadows, large images). Fixes: memoised light rows, `getItemLayout`/recycling list, right-sized cached images, fewer wrapper views, reduce shadow/blur layers, tune window sizes, move work out of render, enable Hermes V1/R8/ProGuard and verify startup/memory ([06](06-startup-bundle-animations-and-gestures.md)).
+Profile on a low-end device in release: check JS FPS (row render cost, `renderItem` stability, data transforms) vs UI FPS (view count, overdraw, shadows, large images). Fixes: memoized light rows, `getItemLayout`/recycling list, right-sized cached images, fewer wrapper views, reduce shadow/blur layers, tune window sizes, move work out of render, enable Hermes V1/R8/ProGuard and verify startup/memory ([06](06-startup-bundle-animations-and-gestures.md)).
 
 ### S2. "Memory grows every time users open and close a detail screen."
 Heap compare across repeated navigation. Typical culprits: listeners/timers/sockets without cleanup, focus listeners without blur teardown, global caches retaining screens' data, images not released, native resources (players) not released. Add cleanup, bounded caches, and a regression test/monitor for memory after N navigations.
 
 ### S3. "After adding a global store, every screen re-renders on any update."
-Subscribing to the whole store/context. Introduce selector-based subscriptions or split contexts, memoise provider values, keep UI-only state local, and verify with the Profiler's "why did this render" information; consider React Compiler benefits only after structure is fixed.
+Subscribing to the whole store/context. Introduce selector-based subscriptions or split contexts, memoize provider values, keep UI-only state local, and verify with the Profiler's "why did this render" information; consider React Compiler benefits only after structure is fixed.
 
 ### S4. "Search-as-you-type janks and shows stale results."
-Keep input state urgent; debounce network calls; cancel in-flight requests (`AbortController`); defer expensive filtering/results rendering via `useDeferredValue`/`startTransition`; memoise the filtered list; virtualise results; guard against out-of-order responses ([09](09-networking-storage-and-offline.md)).
+Keep input state urgent; debounce network calls; cancel in-flight requests (`AbortController`); defer expensive filtering/results rendering via `useDeferredValue`/`startTransition`; memoize the filtered list; virtualize results; guard against out-of-order responses ([09](09-networking-storage-and-offline.md)).
 
 ### S5. "Design a performance budget and monitoring for the app."
 Define targets (startup TTI, JS/UI FPS on a low-end reference device, memory ceiling, long-task counts, crash-free sessions); gate in CI (bundle size, startup benchmark on a device farm *(hedged)*); instrument production (Long Tasks/Event Timing APIs, Expo Observe or equivalent); dashboards per release with regression alerts; budgets owned per team ([15](15-senior-scenarios-and-system-design.md)).
 
 ### S6. "Image-heavy screen crashes on Android only."
-OOM from decoded bitmaps: verify dimensions, adopt downsampling/thumbnails, ensure virtualisation and bounded caches, check `resizeMethod`/library decode settings, limit concurrent decodes, and test on a low-RAM device.
+OOM from decoded bitmaps: verify dimensions, adopt downsampling/thumbnails, ensure virtualization and bounded caches, check `resizeMethod`/library decode settings, limit concurrent decodes, and test on a low-RAM device.
 
 ---
 
@@ -346,7 +348,7 @@ OOM from decoded bitmaps: verify dimensions, adopt downsampling/thumbnails, ensu
 
 | Symptom | First checks |
 |---|---|
-| JS FPS drops | Renders, memoisation, data transforms, list config |
+| JS FPS drops | Renders, memoization, data transforms, list config |
 | UI FPS drops | Views, overdraw, layout animation, images |
 | Both drop | Chatty JS↔native, event floods |
 | Memory climbs | Leaks (cleanup), images, caches |
@@ -356,7 +358,7 @@ OOM from decoded bitmaps: verify dimensions, adopt downsampling/thumbnails, ensu
 
 ```mermaid
 flowchart LR
-  A["Slow list"] --> B{"Rows memoised and stable?"}
+  A["Slow list"] --> B{"Rows memoized and stable?"}
   B -->|"No"| C["memo rows, hoist renderItem, stable keys"]
   B -->|"Yes"| D{"Fixed row size?"}
   D -->|"Yes"| E["getItemLayout"]
@@ -373,7 +375,7 @@ flowchart LR
 | Term | Meaning |
 |---|---|
 | **JS FPS / UI FPS** | Per-thread frame rates shown by the Perf Monitor |
-| **Virtualisation / windowing** | Mounting only a window of rows around the viewport |
+| **Virtualization / windowing** | Mounting only a window of rows around the viewport |
 | **Recycling** | Reusing a fixed pool of row instances |
 | **Blank area** | Gap when rendering can't keep up with scrolling |
 | **Shallow equality** | `Object.is` comparison used by `memo`/`useMemo`/`useCallback` |
