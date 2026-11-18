@@ -23,8 +23,8 @@
 ## 1. Quick Summary (TL;DR)
 
 - **Startup** = native launch + runtime init + **bundle load** + first render. Biggest levers: **Hermes bytecode (V1 default)**, **lazy TurboModules**, deferring non-critical init, lazy-loading rarely used screens/modules, a splash that doesn't block on heavy bootstrap, and small, right-sized assets. Measure TTI (TTID/TTFD) on **low-end devices in release**.
-- **Bundle/app size:** import only what you use, strip dev code/`console`, trim assets/fonts/locales, enable **R8**/dead-code stripping, analyse with platform and bundle tools. Hermes bytecode helps load time more than download size.
-- **Metro** is the **build/dev-time bundler** (resolve → transform → serialise) and dev server (Fast Refresh); in Release it runs once at build time and is absent at runtime. A Metro bundle and an **OTA bundle** are the same artefact; only delivery differs ([13](13-ota-updates-and-store-releases.md)).
+- **Bundle/app size:** import only what you use, strip dev code/`console`, trim assets/fonts/locales, enable **R8**/dead-code stripping, analyze with platform and bundle tools. Hermes bytecode helps load time more than download size.
+- **Metro** is the **build/dev-time bundler** (resolve → transform → serialize) and dev server (Fast Refresh); in Release it runs once at build time and is absent at runtime. A Metro bundle and an **OTA bundle** are the same artifact; only delivery differs ([13](13-ota-updates-and-store-releases.md)).
 - **Animations:** run per-frame work **off the JS thread** — native driver for `transform`/`opacity`, **Reanimated worklets** for gesture-driven/complex animation; avoid animating layout on the JS thread (the **Animation Backend in 0.85** is changing this for `Animated`).
 - **Gestures:** keep touch feedback on the UI thread; heavy `onPress` work shares the frame with visual feedback — defer it.
 - Dev menu/Fast Refresh/Metro are **Debug-only**; always judge startup and animation smoothness on **Release** builds.
@@ -59,7 +59,7 @@ flowchart LR
 - **Measure, don't guess:** Dev Menu Perf Monitor, Android `adb shell am start -W` (**TTID/TTFD**), Xcode Instruments (App Launch, Time Profiler), the Hermes sampling profiler, in-app marks via the Performance APIs (stable since 0.83), and field data (Expo Observe records startup/navigation performance; Sentry/Datadog-style RUM *(hedged)*). Compare **cold vs warm** starts and **low-end vs flagship** devices.
 - **Time-to-interactive subparts:** native launch, bundle load, module evaluation, first render, data fetch, image decode — instrument each ([05](05-performance-rendering-lists-images-and-memory.md#3-the-systematic-debugging-flow-and-tools)).
 - **Splash handling:** keep the native splash until root layout and critical data are ready; avoid flashing a second blank view; don't gate the whole app on slow network calls — render cached content.
-- **Background restores** (not cold starts) are cheaper: preserve state and avoid re-initialising singletons.
+- **Background restores** (not cold starts) are cheaper: preserve state and avoid re-initializing singletons.
 
 ---
 
@@ -69,9 +69,10 @@ flowchart LR
 - **Strip dev-only code** from release: `console.*` (Babel plugin), dev tooling, mock servers, unused feature flags and test fixtures.
 - **Trim assets:** unused images/fonts/locales and extra density variants; use modern compressed formats (WebP; AVIF where supported *(hedged)*) and vector (SVG) for icons; load big media remotely.
 - **Platform shrinking:** Android **R8/ProGuard** (default in SDK 58 release) and resource shrinking, **App Bundles (AAB)** for per-device APKs; iOS dead-code stripping and App Thinning reports; compare sizes per release in CI ([14](14-ci-cd-with-github-actions.md)).
-- **Analysis tools** *(hedged)*: Metro bundle visualisers (e.g. source-map-explorer-style tools, Expo Atlas), Android APK/AAB Analyzer, Xcode's size report; track a size budget over time.
+- **Analysis tools** *(hedged)*: Metro bundle visualizers (e.g. source-map-explorer-style tools, Expo Atlas), Android APK/AAB Analyzer, Xcode's size report; track a size budget over time.
 - **Hermes and size:** bytecode mainly improves *load time*; JS size in the store package can be similar or smaller depending on compression — measure both download and install size.
 - **Code splitting is limited** in React Native (a single bundle by default); lazy `require`/async routes reduce *evaluation* cost, not necessarily bundle bytes; OTA updates can ship JS changes without a store release ([13](13-ota-updates-and-store-releases.md)).
+- **Lazy loading in code:** `React.lazy(() => import('./HeavyScreen'))` with `Suspense` (or a lazy `require` inside the screen factory) defers *evaluating* that module until first use, which cuts startup time but, in a single Metro bundle, not download size; Expo Router's async routes use the same idea *(hedged: confirm per router version)*.
 - **Native size:** every native library adds binary weight; prefer fewer, maintained SDKs; remove unused architectures/ABIs *(hedged)*.
 
 ---
@@ -80,8 +81,8 @@ flowchart LR
 
 Per Metro's docs: *a bundler that takes an entry file and options and produces a single JavaScript file containing your code and its dependencies.* Three stages:
 1. **Resolution** — build the module graph by following `import`/`require`.
-2. **Transformation** — transpile each module (Babel: JSX/TypeScript), parallelised across cores and cached.
-3. **Serialisation** — combine modules into the final bundle(s).
+2. **Transformation** — transpile each module (Babel: JSX/TypeScript), parallelized across cores and cached.
+3. **Serialization** — combine modules into the final bundle(s).
 
 | Mode | Role |
 |---|---|
@@ -89,7 +90,7 @@ Per Metro's docs: *a bundler that takes an entry file and options and produces a
 | **Release** | One-time **build-step** invocation (Gradle bundling task / Xcode build phase) producing the static bundle embedded in the APK/AAB/IPA; Metro is then out of the picture |
 
 - **Why Metro isn't needed in production:** the installed app reads its **embedded** bundle from disk — no network call to Metro (the docs: Release bundles JS locally so the app works unconnected from your computer).
-- **Metro bundle vs OTA bundle:** same artefact from the same tool; a build-time bundle ships inside the binary and goes through store review, an **OTA bundle** is uploaded to an update service and downloaded by an installed app — and must stay **compatible with the installed native code** ([13](13-ota-updates-and-store-releases.md)).
+- **Metro bundle vs OTA bundle:** same artifact from the same tool; a build-time bundle ships inside the binary and goes through store review, an **OTA bundle** is uploaded to an update service and downloaded by an installed app — and must stay **compatible with the installed native code** ([13](13-ota-updates-and-store-releases.md)).
 - **Config:** `metro.config.js` (resolver for monorepos/symlinks, transformer options, asset plugins, `server.tls`); Expo provides `expo/metro-config` defaults and fingerprinting.
 - **Speed:** Metro **0.87** is faster/leaner (RN 0.87); Expo SDK 58's experimental Rust (oxc-based) transformer targets ~2× faster cold bundling when no custom transform worker/Babel plugins are used, and skips files needing the Reanimated/Worklets transforms *(experimental; numbers from Expo's test app)*.
 - **Version note:** RN 0.87 requires Node 22+; Metro caches transforms — clear with `--reset-cache` when config/Babel plugins change; Expo's Metro records inlined `EXPO_PUBLIC_*` values so changes invalidate cached output.
@@ -109,7 +110,7 @@ Two frame budgets ([05](05-performance-rendering-lists-images-and-memory.md#2-fr
 | **Reanimated** (worklets) | **UI thread** via JSI | Gesture-driven, interruptible, derived values, layout/entering/exiting animations | Extra dependency and Babel plugin; learning curve ([§6](#6-reanimated-worklets-and-ui-thread-javascript)) |
 | CSS-like/declarative animation APIs *(hedged: newer Reanimated releases)* | UI thread | Less boilerplate | Verify support for your Reanimated/RN versions |
 
-- **Prefer `transform` and `opacity`**; animating layout properties forces Yoga layout on each frame ([02](02-architecture-bridge-to-new-architecture.md#9-trees-yoga-and-view-flattening)). **0.85 Animation Backend:** a shared internal engine applying animation updates for both `Animated` and Reanimated, moving core update logic into RN core so Reanimated can land optimisations and `Animated` can animate Flexbox/position props with the native driver (**experimental**; opt in via the experimental release level; stable availability depends on your RN/Reanimated versions).
+- **Prefer `transform` and `opacity`**; animating layout properties forces Yoga layout on each frame ([02](02-architecture-bridge-to-new-architecture.md#9-trees-yoga-and-view-flattening)). **0.85 Animation Backend:** a shared internal engine applying animation updates for both `Animated` and Reanimated, moving core update logic into RN core so Reanimated can land optimizations and `Animated` can animate Flexbox/position props with the native driver (**experimental**; opt in via the experimental release level; stable availability depends on your RN/Reanimated versions).
 - **`debugOptimized` (Android, 0.82)** makes debug-style builds much smoother (an animation sample ≈60 FPS vs ≈20 FPS in plain debug) when you can't use release — C++ debugging not available.
 - **Navigation transitions:** native-stack animations run on the native thread and stay smooth when JS is blocked; JS-based navigators stall with the JS thread ([10](10-app-architecture-state-and-navigation.md#4-navigation)).
 - **Common smoothness killers:** animating `Image` width/height on iOS (re-scale each frame — animate `transform: scale`), large shadows/blur, overdraw, heavy re-renders during animation, JS timers for frame stepping.
@@ -123,7 +124,7 @@ Two frame budgets ([05](05-performance-rendering-lists-images-and-memory.md#2-fr
 - **Worklet:** a JS function marked to run on the **UI thread** in a **second JS runtime** (a separate engine instance on the UI thread), created through **JSI** and set up by a **Babel plugin** that captures the function so it can be executed off the main JS runtime. This is the clearest case of **real JS-level parallelism** in RN ([01](01-javascript-runtime-hermes-and-event-loop.md#9-concurrency-vs-parallelism-and-getting-work-off-the-js-thread)).
 - **Shared values** (`useSharedValue`) live in memory accessible from both runtimes; **`useAnimatedStyle`** derives styles on the UI thread each frame; updates to shared values **don't trigger React re-renders**, which is why gesture-driven effects (parallax, drag, fade-on-scroll) stay at 60/120 fps even when React is busy.
 - **Crossing back:** `runOnJS` calls a JS-runtime function from a worklet (e.g. to set React state or navigate); `runOnUI` runs a worklet from JS. Each crossing has cost — don't do it every frame.
-- **Constraints:** worklets capture values at creation (closure capture is by copy); only serialisable data crosses runtimes; some APIs (`console`, many libraries) aren't available inside worklets without bridging; **mutating captured JS objects** doesn't behave like normal JS.
+- **Constraints:** worklets capture values at creation (closure capture is by copy); only serializable data crosses runtimes; some APIs (`console`, many libraries) aren't available inside worklets without bridging; **mutating captured JS objects** doesn't behave like normal JS.
 - **Build/tooling:** the Babel plugin must be last in the plugin list *(hedged)*; Expo's experimental Rust transformer **skips files needing the Reanimated/Worklets transforms**; Hermes V1 and the New Architecture require compatible Reanimated/Worklets versions — check the library's compatibility table before upgrading RN ([02](02-architecture-bridge-to-new-architecture.md#12-migration-interop-and-the-timeline)).
 - **Related:** scroll-linked animations via `useAnimatedScrollHandler`, layout/entering/exiting animations, shared element transitions *(hedged)*; reduce-motion preferences ([07](07-ui-styling-layout-accessibility-and-localization.md)).
 
@@ -151,7 +152,7 @@ Two frame budgets ([05](05-performance-rendering-lists-images-and-memory.md#2-fr
 7. Assuming Reanimated/Worklets versions are compatible with your RN/Hermes V1/New Architecture version.
 8. Crossing `runOnJS` every frame; capturing large JS objects in worklets.
 9. Relying on removed APIs (`InteractionManager`, `Touchable*`, `Modal animated`).
-10. Mistaking Metro dev-server behaviour (Fast Refresh, lazy compilation) for production behaviour.
+10. Mistaking Metro dev-server behavior (Fast Refresh, lazy compilation) for production behavior.
 11. Ignoring R8/ProGuard keep-rule needs when enabling default minification.
 12. Not tracking bundle/app size over releases.
 
@@ -162,11 +163,11 @@ Two frame budgets ([05](05-performance-rendering-lists-images-and-memory.md#2-fr
 - **What happens at startup, and where can you save time?** Runtime init, bundle load, module evaluation, first render; Hermes bytecode, lazy TurboModules, deferred init, lazy screens.
 - **Highest-leverage startup lever?** Hermes precompiled bytecode (plus lazy TurboModules and deferring non-critical work).
 - **How do you measure startup?** Perf Monitor, `adb shell am start -W`, Instruments App Launch, Hermes profiler, in-app marks/RUM.
-- **How to reduce bundle size?** Targeted imports, strip dev code/console, trim assets, R8/dead-code stripping, analyse regularly.
+- **How to reduce bundle size?** Targeted imports, strip dev code/console, trim assets, R8/dead-code stripping, analyze regularly.
 - **What does Hermes do for size vs load time?** Mostly load time; measure package size separately.
-- **What is Metro and where does it run?** A bundler (resolve → transform → serialise) and dev server; build-time only in release.
+- **What is Metro and where does it run?** A bundler (resolve → transform → serialize) and dev server; build-time only in release.
 - **Why isn't Metro needed in production?** The installed app reads an embedded bundle.
-- **Metro bundle vs OTA bundle?** Same artefact; build-time embedded vs runtime-delivered; OTA must match installed native code.
+- **Metro bundle vs OTA bundle?** Same artifact; build-time embedded vs runtime-delivered; OTA must match installed native code.
 - **Why animate `transform`/`opacity`?** Avoid per-frame Yoga layout; native driver/UI thread can handle them.
 - **What changed for `Animated` in 0.85?** Animation Backend lets native-driven animation cover layout props (experimental).
 - **What is a worklet?** A function executed on the UI thread's separate JS runtime via JSI.
@@ -183,7 +184,7 @@ Two frame budgets ([05](05-performance-rendering-lists-images-and-memory.md#2-fr
 Profile per phase on a real device in release: native launch, bundle load (Hermes V1/bytecode, R8), module evaluation (inline requires, lazy imports, remove top-level work), first render (lighter root, skeletons), data (cache-first). Defer analytics/prefetch, shrink assets/fonts, avoid synchronous persisted-store hydration, and verify with field RUM (Expo Observe or equivalent) before/after; set a startup budget in CI.
 
 ### S2. "Bundle grew 40% after adding a charting library."
-Analyse the graph (Atlas/visualiser), check for whole-library imports and bundled locales/fonts, evaluate a lighter library or lazy-loading the chart feature, tree-shake via targeted imports, check duplicates of dependencies, measure download and install size, and add size budgets to CI.
+Analyze the graph (Atlas/visualizer), check for whole-library imports and bundled locales/fonts, evaluate a lighter library or lazy-loading the chart feature, tree-shake via targeted imports, check duplicates of dependencies, measure download and install size, and add size budgets to CI.
 
 ### S3. "A drag-to-reorder interaction lags when data loads in the background."
 JS thread contention. Move the gesture and positional updates to Gesture Handler + Reanimated shared values (UI thread), keep React state updates (data merge) off the gesture path via transitions/batching, and commit order changes with `runOnJS` on gesture end only.
@@ -204,8 +205,8 @@ Keep the native splash until root content and critical cached data are ready, av
 | Goal | Do |
 |---|---|
 | Faster launch | Hermes V1 bytecode, lazy modules/screens, defer init, light first render |
-| Smaller app | Targeted imports, strip console, trim assets, R8/AAB, analyse |
-| Metro | Resolve → transform → serialise; dev server only in Debug |
+| Smaller app | Targeted imports, strip console, trim assets, R8/AAB, analyze |
+| Metro | Resolve → transform → serialize; dev server only in Debug |
 | Animations | Native driver (`transform`/`opacity`), Reanimated worklets, avoid JS-per-frame |
 | 0.85 | Animation Backend: native layout-prop animation for `Animated` (experimental) |
 | Gestures | Gesture Handler + shared values; defer heavy `onPress` work |
@@ -239,7 +240,7 @@ flowchart TD
 | **Animation Backend** | 0.85 shared animation engine for Animated and Reanimated |
 | **Worklet** | UI-thread runnable JS function |
 | **Shared value** | Cross-runtime value driving UI-thread styles |
-| **R8** | Android code shrinker/optimiser/obfuscator |
+| **R8** | Android code shrinker/optimizer/obfuscator |
 
 ---
 
