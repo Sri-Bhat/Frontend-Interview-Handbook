@@ -13,7 +13,8 @@
 7. [Say-This Scripts](#7-say-this-scripts)
 8. [Red Flags vs Green Flags](#8-red-flags-vs-green-flags)
 9. [Final 10-Minute Checklist](#9-final-10-minute-checklist)
-10. [Related Recall Maps](#10-related-recall-maps)
+10. [Visual Recall Diagrams and Triggers](#10-visual-recall-diagrams-and-triggers)
+11. [Related Recall Maps](#11-related-recall-maps)
 
 ---
 
@@ -21,7 +22,7 @@
 
 1. **One JS thread + many native threads.** JS execution is single-threaded (Hermes); the app is multi-threaded (UI, JS, layout, module threads).
 2. **Everything below React was swapped.** Bridge → **JSI**, UIManager → **Fabric**, NativeModules → **TurboModules**, plus **Codegen** contracts. React/Fiber is unchanged. New Architecture is **the only architecture** (0.82).
-3. **Pipeline:** React render → commit (creates shadow nodes via JSI) → Fabric **Render → Commit (Yoga) → Mount (UI thread)**.
+3. **Pipeline:** React render (shadow nodes created via JSI as host components are invoked) → React commit triggers → Fabric **Render → Commit (Yoga) → Mount (UI thread)**; exact phase alignment and Commit thread are not precisely specified in the docs *(hedged)*.
 4. **`setTimeout`, `fetch`, `rAF` are host APIs**, not Hermes. Timers count natively; callbacks run on the JS thread; promises beat timers (microtasks first).
 5. **Blocked JS thread** = no renders/handlers/timers; native-driven animation and scrolling continue; nothing crashes.
 6. **Performance = two frame budgets** (JS and UI, ~16.7 ms). Profile in **Release**; fix the thread that is dropping frames.
@@ -62,7 +63,7 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-  A["Tap"] --> B["Handler: setState (batched)"] --> C["React render, commit"] --> D["Shadow nodes via JSI"] --> E["Fabric commit: Yoga layout"] --> F["Mount on UI thread"] --> G["Frame"] --> H["useEffect after"]
+  A["Tap"] --> B["Handler: setState, batched"] --> C["React render: shadow nodes via JSI"] --> D["React commit"] --> E["Fabric commit: Yoga layout"] --> F["Mount on UI thread"] --> G["Frame"] --> H["useEffect after"]
 ```
 
 **Document map**
@@ -166,11 +167,11 @@ flowchart LR
 - **Who implements `setTimeout`/`fetch`?** RN host polyfills over native; not Hermes.
 - **Promise vs `setTimeout(0)`?** Promise first (microtasks before the next macrotask).
 - **Blocked JS thread?** No JS runs; native-driven animation/scroll continue; no crash.
-- **What did the Bridge do wrong?** Async-only, JSON-serialised, batched, eager modules, untyped, no concurrent rendering.
+- **What did the Bridge do wrong?** Async-only, JSON-serialized, batched, eager modules, untyped, no concurrent rendering.
 - **What is JSI?** C++ interface for direct JS↔native references; engine-agnostic; not a faster Bridge.
 - **TurboModules vs legacy modules?** Lazy, typed (Codegen), JSI-backed; sync possible but blocks JS.
-- **Fabric phases?** Render (JS, shadow nodes), Commit (Yoga, background), Mount (UI thread, diff + views).
-- **React render/commit vs Fabric?** Different layers; React's commit triggers Fabric's render.
+- **Fabric phases?** Render (shadow nodes, JS thread), Commit (Yoga layout + promotion; docs say background, threading page says JS), Mount (UI thread, diff + views).
+- **React render/commit vs Fabric?** Different layers; shadow nodes are created while React invokes host components, Fabric commit follows React's commit; exact alignment inferred *(hedged)*.
 - **What enables concurrent rendering in RN?** Immutable, thread-safe shadow trees.
 - **Hermes V1?** Default since 0.84; precompiled bytecode; no JIT yet.
 - **New Architecture status?** Only architecture since 0.82; migrate via 0.81/SDK 54 first.
@@ -188,7 +189,7 @@ flowchart LR
 - **What is a worklet?** UI-thread JS function in a second runtime.
 - **`useEffect` vs `useLayoutEffect`?** After-visible passive vs before-visible synchronous.
 - **TanStack Query defaults?** stale 0, gc 5 min, retry 3.
-- **Why not everything in Redux?** Server state, local state, over-centralisation, scoping, lifecycles.
+- **Why not everything in Redux?** Server state, local state, over-centralization, scoping, lifecycles.
 - **Auth navigation pattern?** Conditional screens; splash while restoring.
 - **Error categories?** UI / API / crash / business.
 - **Error boundary limits?** Not event handlers/async; class only.
@@ -220,7 +221,7 @@ flowchart LR
 
 - **"Explain the New Architecture."** "The Bridge was an async, JSON, batched queue. JSI replaces it with direct C++ references; TurboModules are lazy typed native modules; Fabric is a shared C++ renderer with an immutable shadow tree running render, commit and mount; Codegen makes the JS spec the contract. It's an enabler — and since 0.82 it's the only architecture."
 - **"The app is janky — what do you do?"** "Profile a release build on a low-end device, see which FPS drops — JS or UI — then fix that side: render counts and list config for JS; views, overdraw and layout animation for UI; and I check memory growth separately."
-- **"How do you secure a banking app?"** "Server-side authorisation first; PKCE in the system browser; rotated refresh tokens in Keychain/Keystore, biometrics gating the secret; step-up for risky actions; pinning with a rotation plan; no secrets or PII in bundle, logs or deep links; blur sensitive screens; attestation signals as one input."
+- **"How do you secure a banking app?"** "Server-side authorization first; PKCE in the system browser; rotated refresh tokens in Keychain/Keystore, biometrics gating the secret; step-up for risky actions; pinning with a rotation plan; no secrets or PII in bundle, logs or deep links; blur sensitive screens; attestation signals as one input."
 - **"OTA or store?"** "If it's JS-only I use a flag or a staged OTA gated by runtime version; if it touches native code or permissions it's a store release with phased rollout. Either way telemetry gates the ramp, and I know store releases can't be un-released."
 - **"How do you handle offline?"** "Cache-first rendering with a freshness indicator, retry on reconnect, an outbox with idempotency keys for low-risk writes, and explicit disabled states for actions that must be live."
 - **"How do you upgrade RN?"** "Stay inside the support window, go step by step, migrate to the New Architecture on 0.81/SDK 54 first, read breaking changes, update the toolchain, run device smoke tests, and stage the rollout with release health comparisons."
@@ -234,7 +235,7 @@ flowchart LR
 | "RN is single-threaded" | JS single-threaded, app multi-threaded |
 | "JSI is a faster Bridge" | JSI = direct references, no wire format |
 | "New Architecture makes everything faster" | Enabler; measure |
-| `fetch` rejects on 404 | Checks `ok`, normalises errors |
+| `fetch` rejects on 404 | Checks `ok`, normalizes errors |
 | Tokens in AsyncStorage | Keychain/Keystore, rotation, biometrics gate |
 | Optimistic transfers | Pending states + idempotency |
 | Debugging in dev mode | Release-build profiling on low-end devices |
@@ -248,7 +249,7 @@ flowchart LR
 
 ## 9. Final 10-Minute Checklist
 
-- [ ] JS thread vs native threads; blocked JS behaviour
+- [ ] JS thread vs native threads; blocked JS behavior
 - [ ] Event loop order; host APIs; timers in background
 - [ ] Bridge problems → JSI/Fabric/TurboModules/Codegen; 0.82 timeline
 - [ ] Fabric Render/Commit/Mount; React vs Fabric phases
@@ -266,6 +267,80 @@ flowchart LR
 
 ---
 
-## 10. Related Recall Maps
+## 10. Visual Recall Diagrams and Triggers
+
+**Three trees (never conflate):** React element tree and fibers (JS) → React shadow tree (C++, immutable, layout) → host view tree (native views). Fibers use **double buffering** (current vs work-in-progress); shadow trees use **structural sharing** (clone only the changed path).
+
+```mermaid
+flowchart LR
+  E["React element tree and fibers: JS"] --> S["Shadow tree: C++, immutable, with layout"] --> H["Host view tree: native views"]
+  S -. "flattening removes layout-only nodes" .-> H
+```
+
+**Hermes: init vs compile.** Compile time (build): Metro bundle → `hermesc` → bytecode. Run time: load bytecode, initialize runtime, execute; no parse/compile on device, which is why startup improves. No JIT (V1 included, at the time of verification).
+
+```mermaid
+flowchart LR
+  A["Build: JS bundle"] --> B["hermesc: bytecode"] --> C["App start: load bytecode and init runtime"] --> D["Run JS: GC, event loop"]
+```
+
+**Event loop and blocked JS.** Stack empties, then all microtasks, then one macrotask. A blocked JS thread stalls handlers, timers and renders but not native scrolling or native-driven animation.
+
+```mermaid
+flowchart TD
+  A["Long synchronous JS"] --> B["JS thread busy"]
+  B --> C["No handlers, timers, setState, renders"]
+  B --> D["UI thread still runs"]
+  D --> E["Native scroll and UI-thread animation continue"]
+  D --> F["No new content until JS returns"]
+```
+
+**Performance triage.**
+
+```mermaid
+flowchart TD
+  P["Jank or slowness"] --> M["Release build on low-end device"]
+  M --> Q{"Which FPS drops?"}
+  Q -->|"JS"| J["Profiler: renders, lists, JSON, state"]
+  Q -->|"UI"| U["Views, overdraw, layout animation, images"]
+  Q -->|"Memory grows"| L["Leaks: listeners, timers, sockets, closures, caches"]
+```
+
+**Native contract (Codegen).** JS or TS spec → Codegen generates native interfaces → native implements → JS calls through JSI. Decision: capability without UI = module; UI = component; per-OS difference = `Platform` (runtime) or file extensions (build time).
+
+**State and auth.** Kinds: local, global client, server (Query), persistent. Auth flow: PKCE in system browser → tokens in Keychain/Keystore → 401 → single-flight refresh → retry once → on failure, sign out.
+
+```mermaid
+flowchart LR
+  A["Request"] --> B{"401?"}
+  B -->|"No"| C["Response"]
+  B -->|"Yes"| D["Single-flight refresh"] --> E{"Refreshed?"}
+  E -->|"Yes"| F["Retry once"]
+  E -->|"No"| G["Sign out"]
+```
+
+**Lifecycle, push, deep links.** AppState: `active`, `background`, `inactive` (iOS transitions). Cold start: `getInitialURL` / initial notification; warm: `url` event / notification-opened event. JS timers do not survive background; use OS-scheduled work. Prefer recursive `setTimeout` over `setInterval` and compute elapsed time from timestamps to avoid drift.
+
+**Networking chain.** `fetch` → JS polyfill → native networking (OkHttp / `NSURLSession`) → OS/TLS → server. No CORS; no auto-reject on HTTP error; no default timeout; pinning lives natively.
+
+**Bundle vs OTA vs store.** Metro bundle = JS + assets, built per release. OTA replaces the JS bundle if the **runtime version** matches the installed binary. Store release changes native code. Rollback: flag, OTA republish, halt rollout, higher version (store cannot un-release).
+
+```mermaid
+flowchart LR
+  C["Commit"] --> CI["CI: lint, test, build"]
+  CI --> O["OTA: JS only, staged"]
+  CI --> S["Store: native, phased"]
+  O --> T["Telemetry"]
+  S --> T
+  T -. "halt or flag" .-> CI
+```
+
+**Capstone walkthrough (say it end to end):** tap → handler → `setState` batched → React render creates shadow nodes via JSI → commit → Yoga layout → mount on the UI thread → frame; effects after; meanwhile network via native stack, state in Query, secrets in Keychain, shipped by staged OTA or phased store release.
+
+**Effect timing (safe statement):** `useInsertionEffect` → host mutation → `useLayoutEffect` (sync, before the visible update) → paint/mount → `useEffect`. Do not assert order relative to Fabric layout or mount; the docs do not specify it.
+
+---
+
+## 11. Related Recall Maps
 
 - [React](../react/README.md) · [TypeScript](../typescript/README.md) · [Next.js & Rendering](../nextjs-and-rendering/README.md) · [Web Performance](../web-performance/README.md) · [Browser Internals](../browser-internals/README.md) · [Web Security](../web-security/README.md) · [Networking & APIs](../networking-and-apis/README.md) · [Testing](../testing/README.md)
