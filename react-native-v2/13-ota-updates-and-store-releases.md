@@ -1,6 +1,6 @@
 # OTA Updates and App Store / Play Store Releases
 
-> Verification note: Release facts were checked against **Expo's changelog and SDK 58 notes (Oct–Nov 2026)** — the `balanced` **fingerprint** preset is the default (version bumps and `node_modules` file changes no longer alter the fingerprint; native modules are hashed by package name and version), **`updates.maxUpdatesToKeep`** was added to `expo-updates` (helps channel-surfing setups avoid re-downloading), **Expo Go is not a production environment** (use development builds), **EAS Workflows** gained concurrency groups and hooks (Nov 2026), **EAS Observe** reached general availability (Aug 2026) and records startup/navigation performance, JS errors and native crashes per release, the PostHog integration tags events with `eas/update_id`, `eas/build_id`, `eas/channel` and `eas/runtime_version`, iOS 27 builds require the scene-based lifecycle ([08](08-app-lifecycle-background-work-push-and-deep-links.md)), and **Android release builds use R8 by default** — plus the **React Native support policy** (latest plus the previous two minor lines are supported; e.g. 0.82 became unsupported when 0.85 shipped) and **0.81 / SDK 54 as the last Legacy-Architecture versions** ([02](02-architecture-bridge-to-new-architecture.md#12-migration-interop-and-the-timeline)). The policy quotes below (Apple App Store Review Guideline **3.3.2**; Google Play's exception for code that runs in a virtual machine with limited API access) come from the earlier verified material in this handbook. **Microsoft CodePush was retired on 31 March 2025 (repository archived 20 May 2025)** — referenced only as an illustrative mechanism. **Exact Expo/EAS CLI commands and config keys, EAS Update branch/channel/rollout features, Apple's phased-release schedule (flagged: Apple's page was not retrievable earlier), Play Console staged-rollout details beyond the cited behaviours, `targetSdkVersion` deadlines and expedited-review criteria are established practice not re-fetched in this session — marked *(hedged)*.** Pipeline automation: [14](14-ci-cd-with-github-actions.md); signing secrets hygiene: [11](11-mobile-security.md#11-secrets-management).
+> Verification note: Release facts were checked against **Expo's changelog and SDK 58 notes (Oct–Nov 2026)** — the `balanced` **fingerprint** preset is the default (version bumps and `node_modules` file changes no longer alter the fingerprint; native modules are hashed by package name and version), **`updates.maxUpdatesToKeep`** was added to `expo-updates` (helps channel-surfing setups avoid re-downloading), **Expo Go is not a production environment** (use development builds), **EAS Workflows** gained concurrency groups and hooks (Nov 2026), **EAS Observe** reached general availability (Aug 2026) and records startup/navigation performance, JS errors and native crashes per release, the PostHog integration tags events with `eas/update_id`, `eas/build_id`, `eas/channel` and `eas/runtime_version`, iOS 27 builds require the scene-based lifecycle ([08](08-app-lifecycle-background-work-push-and-deep-links.md)), and **Android release builds use R8 by default** — plus the **React Native support policy** (latest plus the previous two minor lines are supported; e.g. 0.82 became unsupported when 0.85 shipped) and **0.81 / SDK 54 as the last Legacy-Architecture versions** ([02](02-architecture-bridge-to-new-architecture.md#12-migration-interop-and-the-timeline)). The policy quotes below (Apple App Store Review Guideline **3.3.2**; Google Play's exception for code that runs in a virtual machine with limited API access) come from the earlier verified material in this handbook. **Microsoft CodePush was retired on 31 March 2025 (repository archived 20 May 2025)** — referenced only as an illustrative mechanism. **Exact Expo/EAS CLI commands and config keys, EAS Update branch/channel/rollout features, Apple's phased-release schedule (flagged: Apple's page was not retrievable earlier), Play Console staged-rollout details beyond the cited behaviors, `targetSdkVersion` deadlines and expedited-review criteria are established practice not re-fetched in this session — marked *(hedged)*.** Pipeline automation: [14](14-ci-cd-with-github-actions.md); signing secrets hygiene: [11](11-mobile-security.md#11-secrets-management).
 
 ## Table of Contents
 
@@ -50,7 +50,7 @@ flowchart TD
 **General sequence (EAS Update, historically CodePush, or in-house):**
 ```mermaid
 flowchart TD
-  A["JS-only fix ready"] --> B["Metro builds new bundle (same artefact as a normal build)"]
+  A["JS-only fix ready"] --> B["Metro builds new bundle (same artifact as a normal build)"]
   B --> C["Publish to update server/CDN tagged with channel and runtime version"]
   C --> D["Installed app checks in: launch or periodic"]
   D --> E{"Newer compatible update?"}
@@ -63,7 +63,7 @@ flowchart TD
 - **What changes:** the **JS bundle** and assets bundled via `import`/`require` (images, fonts). **What does not:** native code (Java/Kotlin/Obj-C/Swift), native dependencies/SDKs, permissions (`Info.plist`/`AndroidManifest.xml`), entitlements, and RN/Expo SDK version bumps.
 - **Appropriate OTA content:** JS bug/crash fixes, copy/styling/layout changes, business logic expressible in JS.
 - **Why native can't ship OTA:** it is compiled code registered at **build time**; JS can only call native modules that already exist. Even a workaround would violate policy ([§5](#5-what-must-never-ship-over-the-air)).
-- **Metro bundle vs OTA bundle:** same artefact; embedded at build time and store-reviewed vs delivered at runtime — OTA additionally must match installed native code ([06](06-startup-bundle-animations-and-gestures.md#4-metro-bundler-and-dev-server)).
+- **Metro bundle vs OTA bundle:** same artifact; embedded at build time and store-reviewed vs delivered at runtime — OTA additionally must match installed native code ([06](06-startup-bundle-animations-and-gestures.md#4-metro-bundler-and-dev-server)).
 - **Missing native module at runtime:** legacy architecture → `NativeModules.X` is `undefined` → `TypeError`; New Architecture → `TurboModuleRegistry.getEnforcing` **fails loudly** (invariant/native crash). Either way an unrecoverable crash for that session — hence version gating plus auto-rollback.
 
 ---
@@ -165,16 +165,16 @@ Expo/EAS alternative: **EAS Build** + **EAS Submit** manage credentials and uplo
 
 ## 8. Code Signing
 
-- **iOS:** every build is signed with a **certificate** (identity; key pair whose public half Apple countersigns; Development vs Distribution) and carries a **provisioning profile** (binds certificate(s), the **App ID/bundle identifier**, entitlements and — for development/ad-hoc — registered device UDIDs; App Store profiles carry no device list). Both expire; **Fastlane `match`** centralises them across the team and CI.
-- **Android:** you hold an **upload key** (keystore; `keytool -genkeypair -v -storetype PKCS12 ...`) to sign the AAB; under **Play App Signing** Google **re-signs** the distributed artefact with a separate **app signing key** it holds, so a lost/compromised upload key can be reset — unlike the old single-key model where losing the key orphaned the listing.
-- **APK vs AAB:** APK = directly installable final format; **AAB** = a publishing format that defers APK generation/signing to Google Play, which serves **optimised per-device APKs** (split by ABI, density, language). **AAB has been required for new apps on Google Play since August 2021.** Build APKs (`assembleRelease`) for side-loading/testing.
+- **iOS:** every build is signed with a **certificate** (identity; key pair whose public half Apple countersigns; Development vs Distribution) and carries a **provisioning profile** (binds certificate(s), the **App ID/bundle identifier**, entitlements and — for development/ad-hoc — registered device UDIDs; App Store profiles carry no device list). Both expire; **Fastlane `match`** centralizes them across the team and CI.
+- **Android:** you hold an **upload key** (keystore; `keytool -genkeypair -v -storetype PKCS12 ...`) to sign the AAB; under **Play App Signing** Google **re-signs** the distributed artifact with a separate **app signing key** it holds, so a lost/compromised upload key can be reset — unlike the old single-key model where losing the key orphaned the listing.
+- **APK vs AAB:** APK = directly installable final format; **AAB** = a publishing format that defers APK generation/signing to Google Play, which serves **optimized per-device APKs** (split by ABI, density, language). **AAB has been required for new apps on Google Play since August 2021.** Build APKs (`assembleRelease`) for side-loading/testing.
 - **Secrets:** store signing assets in CI secret stores/encrypted repos with least privilege; audit who can release ([14](14-ci-cd-with-github-actions.md#4-signing-secrets-and-environment-configuration)).
 
 ---
 
 ## 9. Store Rollouts and the Reality of Rollback
 
-- **Google Play staged rollout** (verified behaviours): percentage-based; new and existing users are selected at **random**; **halting then resuming affects the same users**; can be **scoped to countries**; users are **not notified**; Google recommends monitoring **crashes, ANRs and reviews**; applies only to **updates** of an already-published app (not the first release).
+- **Google Play staged rollout** (verified behaviors): percentage-based; new and existing users are selected at **random**; **halting then resuming affects the same users**; can be **scoped to countries**; users are **not notified**; Google recommends monitoring **crashes, ANRs and reviews**; applies only to **updates** of an already-published app (not the first release).
 - **Apple phased release** *(flagged: Apple's page wasn't retrievable earlier; stable general knowledge)*: for apps with automatic updates enabled, rolls out over **7 days in 7 stages** (~1% → 2% → 5% → 10% → 20% → 50% → 100%); can **pause**, resume, or **release to everyone** at any time; users who manually tap Update get the latest immediately regardless of the phase.
 - **You cannot truly un-release a binary.** Rollback at store level = limit further exposure and ship a fix:
   - **Halt/freeze** staged/phased rollouts (no effect on users who already updated).
@@ -187,7 +187,7 @@ Expo/EAS alternative: **EAS Build** + **EAS Submit** manage credentials and uplo
 
 ## 10. Incident Playbooks and Release Operations
 
-**Critical bug, no native change (the "good" branch):** confirm pure-JS → build/test the fix through the normal gates (lint, types, tests) → publish OTA to the affected runtime versions (staged or straight to 100% depending on severity/confidence) → users get it on next restart/foreground check → if the behaviour already sits behind a flag, flipping it is faster still.
+**Critical bug, no native change (the "good" branch):** confirm pure-JS → build/test the fix through the normal gates (lint, types, tests) → publish OTA to the affected runtime versions (staged or straight to 100% depending on severity/confidence) → users get it on next restart/foreground check → if the behavior already sits behind a flag, flipping it is faster still.
 
 **Critical bug requiring native change (the hard branch):** acknowledge OTA can't fix it → reach for the **kill switch/flag** → fix natively and push through CI → request **expedited review** on iOS → release with staged/phased rollout where possible (go to 100% only when severity justifies) → post-incident: flag risky features, shrink native surface, rehearse the path.
 
@@ -195,7 +195,7 @@ Expo/EAS alternative: **EAS Build** + **EAS Submit** manage credentials and uplo
 - **Release checklist:** release notes, migration notes, backend compatibility, flag defaults, store metadata/compliance, privacy manifests/data-safety forms *(hedged)*, screenshots, rollout plan, on-call owner.
 - **Minimum supported version:** a server-driven **forced/soft update** mechanism so very old clients can be blocked/nudged when backend compatibility ends; **API versioning** so rolled-back or lagging clients keep working ([networking-and-apis/03](../networking-and-apis/03-rest-api-design-and-consumption.md#6-versioning-and-evolution)).
 - **Release health:** crash-free users/sessions, ANR rate, startup time, error rate per update ID/build, support tickets; gate rollout expansion on these (EAS Observe, Sentry/Crashlytics *(hedged)*).
-- **Environments:** dev/staging/prod variants with distinct bundle IDs and update channels; internal tracks (TestFlight internal, Play internal testing) and preview updates for QA; never test production-only behaviour in Expo Go.
+- **Environments:** dev/staging/prod variants with distinct bundle IDs and update channels; internal tracks (TestFlight internal, Play internal testing) and preview updates for QA; never test production-only behavior in Expo Go.
 - **Governance:** protected release branches/environments, approval gates, audit logs, separation of duties for publishing OTA vs binaries ([14](14-ci-cd-with-github-actions.md)).
 
 ---
@@ -237,7 +237,7 @@ Expo/EAS alternative: **EAS Build** + **EAS Submit** manage credentials and uplo
 - **Android CI to Play?** Keystore → `bundleRelease` → upload via service account → track/rollout.
 - **Certificates vs provisioning profiles?** Identity vs binding identity+App ID+devices+entitlements.
 - **Play App Signing?** Upload key vs Google-held app signing key.
-- **APK vs AAB?** Installable vs publishing format served as optimised APKs; AAB required since Aug 2021.
+- **APK vs AAB?** Installable vs publishing format served as optimized APKs; AAB required since Aug 2021.
 - **Staged rollout vs phased release?** Google random percentage with stable cohorts and country scoping; Apple 7-day phased schedule for auto-updates.
 - **Can you roll back a store binary?** No — halt, re-point (Google), or ship a higher version (Apple, expedited review).
 
