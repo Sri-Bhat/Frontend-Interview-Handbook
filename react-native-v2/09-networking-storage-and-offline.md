@@ -27,7 +27,7 @@
 - **No CORS** in native apps (no origin concept; a `WebView` still enforces it). **HTTPS is enforced by default:** iOS ATS; Android blocks cleartext from API 28.
 - **A busy JS thread delays delivery**, not the download: the response sits in the native layer until JS can process the event — a latency problem, never data loss.
 - **Cookies/redirect/credentials** options are partly unreliable in RN `fetch`; prefer explicit token auth and test redirects.
-- **Centralise networking** in an API layer: base URL, auth header, interceptors, single-flight token refresh, timeouts/cancellation, retries only for idempotent calls (or with idempotency keys), normalised errors; use TanStack Query/RTK Query for server state ([10](10-app-architecture-state-and-navigation.md)). Protocol and resilience depth: [networking-and-apis/](../networking-and-apis/README.md).
+- **Centralize networking** in an API layer: base URL, auth header, interceptors, single-flight token refresh, timeouts/cancellation, retries only for idempotent calls (or with idempotency keys), normalized errors; use TanStack Query/RTK Query for server state ([10](10-app-architecture-state-and-navigation.md)). Protocol and resilience depth: [networking-and-apis/](../networking-and-apis/README.md).
 - **Storage ladder:** AsyncStorage (unencrypted, small non-sensitive), MMKV *(fast KV)*, SQLite/DB (structured/offline), **Keychain/Keystore** (secrets), file system (blobs); pick by sensitivity and access pattern.
 - **Offline-first:** never let "no network" mean a blank screen — cache → last-known data → clear offline indicator → retry on reconnect → sync a write queue; some actions (trades, transfers) should **not** work offline.
 
@@ -85,7 +85,7 @@ flowchart LR
 
 *(Protocols and patterns are covered in [networking-and-apis/03 REST](../networking-and-apis/03-rest-api-design-and-consumption.md), [06 resilience](../networking-and-apis/06-resilience-retries-timeouts-and-offline.md) and [07 client architecture](../networking-and-apis/07-api-client-architecture-and-contracts.md); mobile-specific points below.)*
 
-- **API abstraction:** wrap HTTP in a `services/` module exposing domain functions (`getPortfolio()`, `transferFunds(payload)`), giving one place for auth headers, logging, retry/timeout policy and error normalisation; swapping the HTTP client doesn't ripple through screens.
+- **API abstraction:** wrap HTTP in a `services/` module exposing domain functions (`getPortfolio()`, `transferFunds(payload)`), giving one place for auth headers, logging, retry/timeout policy and error normalization; swapping the HTTP client doesn't ripple through screens.
 - **Axios vs fetch:** `fetch` is built in (no dependency) but low-level — **it does not reject on HTTP error statuses** (check `response.ok`), has no interceptors, no built-in timeout and no auto JSON handling. Axios adds interceptors, timeout, JSON transforms, rejection on non-2xx and cancellation. Trend: thin `fetch` wrappers (or TanStack Query's fetching) to save bundle weight; know axios cold.
 - **Interceptors:** attach bearer tokens, structured logging, response shaping; the key production use is **central 401 handling**.
 - **Refresh token flow:** access token (short-lived) on each request; refresh token (longer-lived, stored securely) only to mint access tokens. On `401` pause, refresh, retry once.
@@ -103,12 +103,20 @@ sequenceDiagram
 ```
   **Gotcha:** with five requests in flight at expiry, naive interceptors fire five refreshes. **Share one in-flight refresh promise** — the first 401 triggers it, all other 401s await the same promise, then retry. Use **refresh-token rotation** with reuse detection (replay signals theft → revoke the family) ([11](11-mobile-security.md#3-authentication-oauth2-oidc-pkce-tokens-and-sessions)).
 - **Retries, timeouts, cancellation:** exponential backoff + jitter for transient failures; **don't blindly retry non-idempotent writes** (a repeated "transfer funds" POST could double-execute) — send an **idempotency key**; timeouts via axios `timeout` or `AbortController` + timer; cancel on unmount/navigation/supersession ([05 §9](05-performance-rendering-lists-images-and-memory.md#9-async-work-after-unmount-and-cancellation)).
-- **Caching:** primarily library-level (TanStack Query `staleTime`/`gcTime`, RTK Query); HTTP caching (`ETag`/`Cache-Control`) matters at API-design level and helps wrappers that honour headers.
+- **Caching:** primarily library-level (TanStack Query `staleTime`/`gcTime`, RTK Query); HTTP caching (`ETag`/`Cache-Control`) matters at API-design level and helps wrappers that honor headers.
 - **Pagination:** offset pagination skips/duplicates rows when data shifts (a live transaction feed); **cursor-based** is robust; `useInfiniteQuery` (`getNextPageParam`) handles page accumulation.
 - **Optimistic updates:** update the cache immediately and roll back on error (`onMutate` snapshot → `onError` restore → `onSettled` refetch). Great for low-stakes UI (mark read, reorder watchlist); **wrong for money movement** — show an explicit **pending** state that flips only on confirmed server response.
-- **Error normalisation:** convert network, HTTP and parse failures into one shape (`{ code, message, status }`) at the API layer so UI branches on a single contract; business outcomes are typed results, not generic errors ([10 §9](10-app-architecture-state-and-navigation.md#9-error-handling-and-crash-reporting)).
+- **Error normalization:** convert network, HTTP and parse failures into one shape (`{ code, message, status }`) at the API layer so UI branches on a single contract; business outcomes are typed results, not generic errors ([10 §9](10-app-architecture-state-and-navigation.md#9-error-handling-and-crash-reporting)).
 - **Runtime validation and contracts:** parse server responses at the boundary (zod-style) and generate types from OpenAPI to catch drift; version APIs so older app builds keep working after rollbacks ([networking-and-apis/07](../networking-and-apis/07-api-client-architecture-and-contracts.md), [testing/06](../testing/06-api-contract-and-integration-testing.md)).
 - **Mobile-specific:** large JSON parsing blocks the JS thread; compress payloads (gzip/brotli); avoid over-fetching on cellular; send app/build/version headers for support and server-side compatibility; protect against stale responses after backgrounding.
+- **Network performance bottlenecks and fixes:**
+  - **Sequential waterfalls** (`await a(); await b();` for independent calls) → `Promise.all` (fail-fast) or `Promise.allSettled` (partial results).
+  - **Over-fetching / chatty APIs** → field selection, pagination, batching or a BFF endpoint per screen.
+  - **No caching** → query-cache libraries, `ETag`/`Cache-Control`, persisted cache for cold start.
+  - **No compression** → gzip/brotli; appropriately sized images.
+  - **Search-as-you-type storms** → debounce plus cancel stale requests (`AbortController`).
+  - **No retry/backoff** → bounded exponential backoff with jitter for idempotent calls only.
+  - **Measure** request counts, payload sizes and time-to-first-data in the DevTools Network panel and in production telemetry.
 
 ---
 
@@ -120,7 +128,7 @@ sequenceDiagram
 | **MMKV** *(hedged)* | Optional encryption | Fast synchronous key-value (JSI-based), feature flags, cached lists | Great perf; encryption key still needs secure storage |
 | **SQLite / `expo-sqlite`** | Plain unless SQLCipher-style | Structured/relational/offline data, queries, large datasets | SDK 58 adds `interruptSync()`; libSQL sync support removed; encrypted variants for sensitive data |
 | **WatermelonDB / Realm-style** *(hedged)* | Depends | Large offline datasets with reactive queries and sync | More setup; evaluate New Architecture and Hermes V1 support |
-| **Keychain / Keystore** (`expo-secure-store`, `react-native-keychain`) | **Yes** (OS-protected) | Tokens, passwords, certificates, encryption keys; biometric-gated access | Small values only; behaviour on backup/restore and device change differs by platform |
+| **Keychain / Keystore** (`expo-secure-store`, `react-native-keychain`) | **Yes** (OS-protected) | Tokens, passwords, certificates, encryption keys; biometric-gated access | Small values only; behavior on backup/restore and device change differs by platform |
 | **File system** (`expo-file-system`) | Plain unless you encrypt | Images, PDFs, downloads, exported statements | SDK 58: `File.write()` is async; `File.digest()` replaces `File.md5` |
 | **TanStack Query persister** | Via underlying storage | Cache rehydration on cold start | Persist only non-sensitive queries; set `gcTime` ≥ persistence max age |
 
@@ -156,7 +164,7 @@ flowchart LR
 
 **Outbox pattern *(hedged)*:** persist mutations (with client IDs and idempotency keys) → replay in order on reconnect → map server IDs → resolve conflicts (last-write-wins vs merge vs prompt) → surface failures. **Cache invalidation after sync** keeps UI consistent.
 
-**Poor networks (not just offline):** slow/lossy links need timeouts, skeletons, smaller payloads, progressive loading, request prioritisation, and no unbounded retries; test with network conditioners/profiles on devices ([12](12-expo-eas-tooling-and-debugging.md), [networking-and-apis/06](../networking-and-apis/06-resilience-retries-timeouts-and-offline.md)).
+**Poor networks (not just offline):** slow/lossy links need timeouts, skeletons, smaller payloads, progressive loading, request prioritization, and no unbounded retries; test with network conditioners/profiles on devices ([12](12-expo-eas-tooling-and-debugging.md), [networking-and-apis/06](../networking-and-apis/06-resilience-retries-timeouts-and-offline.md)).
 
 ---
 
@@ -212,7 +220,7 @@ flowchart LR
 ## 11. Interview Questions — Senior Scenarios
 
 ### S1. "Design the networking layer for a wealth-management app."
-Typed API client over `fetch`: base URL/env config, auth interceptor with single-flight refresh, timeout + abort, retry only for idempotent GETs (and keyed writes), normalised errors and typed domain errors, response validation, telemetry with trace IDs and PII scrubbing, pinning where mandated, TanStack Query for server state with persisted non-sensitive cache, cursor pagination, pending states for money movement, contract tests ([networking-and-apis/07](../networking-and-apis/07-api-client-architecture-and-contracts.md), [testing/06](../testing/06-api-contract-and-integration-testing.md)).
+Typed API client over `fetch`: base URL/env config, auth interceptor with single-flight refresh, timeout + abort, retry only for idempotent GETs (and keyed writes), normalized errors and typed domain errors, response validation, telemetry with trace IDs and PII scrubbing, pinning where mandated, TanStack Query for server state with persisted non-sensitive cache, cursor pagination, pending states for money movement, contract tests ([networking-and-apis/07](../networking-and-apis/07-api-client-architecture-and-contracts.md), [testing/06](../testing/06-api-contract-and-integration-testing.md)).
 
 ### S2. "Users in poor-signal areas see endless spinners."
 Add timeouts and skeletons, cache-first rendering with a visible freshness indicator, smaller/compressed payloads and cursor pagination, backoff with jitter and a cap, cancel stale requests, differentiate offline vs slow vs server errors, and test with throttled network profiles on real devices.
@@ -221,10 +229,10 @@ Add timeouts and skeletons, cache-first rendering with a visible freshness indic
 Missing idempotency. Generate a client idempotency key per user intent, persist it until confirmation, send it on every retry, make the server dedupe and return the original result, show a pending state, and reconcile by querying the transfer status instead of resubmitting blindly.
 
 ### S4. "Support sees random logouts after a deploy."
-Likely parallel refresh races or rotation reuse detection triggering family revocation. Add single-flight refresh, serialise refresh per session, handle 401-after-refresh as hard logout only once, log refresh outcomes (no tokens), and verify rotation grace windows with the backend.
+Likely parallel refresh races or rotation reuse detection triggering family revocation. Add single-flight refresh, serialize refresh per session, handle 401-after-refresh as hard logout only once, log refresh outcomes (no tokens), and verify rotation grace windows with the backend.
 
 ### S5. "Offline mode must let advisers capture client notes."
-Local-first store (SQLite) with encrypted storage, an outbox with client IDs and idempotency keys, optimistic local UI (low-stakes data), conflict policy per entity, sync indicator, background sync on reconnect and foreground, data minimisation and wipe-on-logout, plus audit logging.
+Local-first store (SQLite) with encrypted storage, an outbox with client IDs and idempotency keys, optimistic local UI (low-stakes data), conflict policy per entity, sync indicator, background sync on reconnect and foreground, data minimization and wipe-on-logout, plus audit logging.
 
 ### S6. "Pinning broke the app after a certificate renewal."
 Pin an intermediate/CA or include backup pins, ship updates ahead of expiry, add remote kill-switch/override for pinning in emergencies with security review, monitor pin failures, and automate expiry alerts ([11](11-mobile-security.md#5-certificate-pinning)).
