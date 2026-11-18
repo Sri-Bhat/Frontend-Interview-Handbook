@@ -56,7 +56,7 @@ flowchart LR
 **Engines in React Native today**
 - **Hermes (default)** — Meta's engine built for React Native. **Hermes V1** became the default in **0.84** (opt-in/experimental in 0.82), bringing compiler and VM improvements; confirm at runtime with `HermesInternal.getRuntimeProperties()['OSS Release Version']` (the `global.HermesInternal` object also indicates Hermes is active).
 - **JavaScriptCore** — Safari's engine; since **0.81** it is **community-maintained** and no longer in core. On iOS, JSC runs **without a JIT** (apps cannot hold writable-and-executable memory).
-- **V8** — available through community packages *(hedged)*. Historically your JS also ran in desktop Chrome under legacy "remote JS debugging"; that mode is gone in favour of **React Native DevTools** ([12](12-expo-eas-tooling-and-debugging.md)), so timers/clock-drift quirks of remote debugging no longer apply.
+- **V8** — available through community packages *(hedged)*. Historically your JS also ran in desktop Chrome under legacy "remote JS debugging"; that mode is gone in favor of **React Native DevTools** ([12](12-expo-eas-tooling-and-debugging.md)), so timers/clock-drift quirks of remote debugging no longer apply.
 - **Interview framing:** engines are *similar but not identical*; relying on engine-specific quirks is a classic "works in debug, breaks in release" source.
 
 ---
@@ -68,7 +68,7 @@ flowchart LR
 | **Ahead-of-time bytecode** | `hermesc` compiles JS to Hermes bytecode (HBC) at build time; the device loads bytecode instead of parsing/compiling source on every launch — the main startup/TTI win, especially on low-end Android |
 | **Interpreter-first** | Hermes is primarily a bytecode **interpreter**, not a tiered JIT: lower memory and more predictable startup in exchange for lower peak throughput on hot numeric loops. **Hermes V1 has no JIT and no JS-to-native ("Static Hermes") compilation yet** (those remain experiments) |
 | **Memory** | Designed for mobile constraints; typically a smaller footprint than JSC for RN workloads |
-| **Garbage collector** | Generational GC (the "Hades" collector *(hedged naming)*): **young generation** collected fast and often (most objects die young); **old generation** collected **concurrently on another thread** to minimise JS-thread pauses |
+| **Garbage collector** | Generational GC (the "Hades" collector *(hedged naming)*): **young generation** collected fast and often (most objects die young); **old generation** collected **concurrently on another thread** to minimize JS-thread pauses |
 | **Bundled Hermes** | Released together with each RN version so the JSI implementation used by Hermes and RN always match (avoids ABI mismatches) |
 | **Hermes V1 numbers (Expensify, 0.82 announcement)** | Bundle load 3.2% (iOS) / 9% (Android) faster; total TTI 7.6% / 2.5% faster; content TTI 7.2% / 7.5% faster — *app-dependent* |
 | **Debugging/profiling** | Chrome DevTools protocol via React Native DevTools, sampling profiler, heap snapshots, source maps for symbolicated stacks ([12](12-expo-eas-tooling-and-debugging.md)) |
@@ -105,9 +105,9 @@ sequenceDiagram
 - **`setTimeout(fn, 0)` is not synchronous:** it still goes through the native round trip, must wait for current sync code **and all microtasks**, and is a macrotask.
 - **Hermes does not implement these APIs.** RN's docs list `{set,clear}{Timeout,Interval,Immediate}`, `{request,cancel}AnimationFrame`, `fetch`, `XMLHttpRequest` as RN-supplied polyfills; Hermes only executes the language.
 - **Browser vs RN:** same contract (host API, macrotask, minimum delay); different host. `requestAnimationFrame` is tied to the display link (`CADisplayLink` / `Choreographer`) and RN's own commit cycle, not a browser compositor. Browsers throttle timers in background tabs; RN apps may have JS **suspended** when backgrounded ([08](08-app-lifecycle-background-work-push-and-deep-links.md)).
-- **`setImmediate`** exists in RN (not in browsers) and fires at the end of the current JS execution block, before yielding back to native; it is **not** Node's libuv `setImmediate`.
+- **`setImmediate`** exists in RN (not in browsers) and fires at the end of the current JS execution block, before yielding back to native; it is **not** Node's libuv `setImmediate` *(hedged: confirm in your RN version, since timer polyfills have been evolving)*.
 - **`setInterval` drift:** each tick is scheduled after the previous callback, so busy JS or throttling makes ticks late and uneven; compute elapsed time from timestamps instead of counting ticks ([08](08-app-lifecycle-background-work-push-and-deep-links.md)).
-- **`InteractionManager.runAfterInteractions`** (older advice for deferring work) was **removed in 0.87**; use `requestIdleCallback` or explicit scheduling.
+- **`InteractionManager.runAfterInteractions`** (older advice for deferring work) was **removed in 0.87** *(sourced from Expo SDK 58 release notes, not the RN 0.87 post; verify before relying on it)*; use `requestIdleCallback` or explicit scheduling.
 - **Newer web-aligned APIs:** `performance.now()`, `PerformanceObserver`, User Timing (`mark`/`measure`), Event Timing and Long Tasks are **stable since 0.83** — useful for in-app telemetry ([05](05-performance-rendering-lists-images-and-memory.md)). Native components' refs expose **DOM-like nodes** (`parentNode`, `getBoundingClientRect`, `ownerDocument`) since **0.82**.
 
 ---
@@ -147,7 +147,19 @@ console.log('5 sync end');
 
 **`async/await`:** syntactic sugar over promises. Code **before the first `await`** runs synchronously; each `await` suspends and the continuation resumes as a **microtask** on the same JS thread. `await` on an already-resolved value still yields one microtask turn. No thread is created — the real parallelism behind an awaited operation (network, timer countdown) happens **outside JS**.
 
-**Event loop and React rendering:** a state update does not render by itself — it schedules work. With automatic batching, updates from one synchronous block produce **one** re-render; React's render and commit (which synchronously creates Fabric shadow nodes via JSI) run as ordinary synchronous JS inside the task that triggered them ([03](03-react-internals-and-rendering-in-react-native.md)). Hence an expensive render blocks everything else exactly like any long synchronous code.
+```js
+async function load() {
+  console.log('A sync (before first await)');
+  await null;                       // continuation is queued as a microtask
+  console.log('C after await');     // runs after the current sync code, before any timer
+}
+setTimeout(() => console.log('D timeout'), 0);
+load();
+console.log('B sync after calling load()');
+// A, B, C, D
+```
+
+**Event loop and React rendering:** a state update does not render by itself — it schedules work. With automatic batching, updates from one synchronous block produce **one** re-render; React's render and commit (during which the renderer creates or clones Fabric shadow nodes via JSI and then triggers a Fabric commit) run as ordinary synchronous JS inside the task that triggered them ([03](03-react-internals-and-rendering-in-react-native.md)). Hence an expensive render blocks everything else exactly like any long synchronous code.
 
 **Unhandled rejections:** since **0.82** an uncaught promise rejection surfaces as `console.error` through the uncaught-error reporting path (previously swallowed), so upgrades can reveal old errors and spike crash-reporting volume ([10](10-app-architecture-state-and-navigation.md) for error handling).
 
@@ -188,7 +200,7 @@ flowchart LR
 ## 8. Memory, Closures and Garbage Collection
 
 - A JS "leak" is a **reference that outlives its usefulness**, keeping an object reachable so GC can't reclaim it (no manual `free`). The React Native leak catalogue (listeners, subscriptions, timers, sockets, navigation, native resources) lives in [05](05-performance-rendering-lists-images-and-memory.md#8-memory-leaks); this section covers the language-level mechanics.
-- **Closures retain their whole enclosing scope**, not just the variables they use (engines may optimise, but you should not rely on it):
+- **Closures retain their whole enclosing scope**, not just the variables they use (engines may optimize, but you should not rely on it):
 
 ```js
 function setup() {
@@ -216,11 +228,11 @@ const fn = setup();
 
 **Can RN run JS on multiple threads?** By default no: one thread, one engine instance. **Exception:** **Reanimated/Worklets** *(hedged)* run worklets — JS functions — on a **second JS runtime on the UI thread**, giving genuine JS-level parallelism for per-frame work ([06](06-startup-bundle-animations-and-gestures.md)).
 
-**Web Worker vs the RN JS thread:** a Web Worker (browser/Node) is a separate thread with its own global scope and event loop, communicating by copied messages. The RN "JS thread" is simply *the* thread of the single engine instance, and RN has **no Worker API by default**; the nearest equivalents are the worklet runtime or community worker-style libraries.
+**Web Worker vs the RN JS thread:** a Web Worker (browser/Node) is a separate thread with its own global scope and event loop, communicating by copied messages. The RN "JS thread" is simply *the* thread of the single engine instance, and RN has **no Worker API by default**; the nearest equivalents are the worklet runtime or community worker-style libraries (e.g. `react-native-threads`-style packages; maintenance status must be checked *(hedged)*). Node's `worker_threads` does not exist in RN.
 
 **CPU-heavy work options (most to least preferred):**
 1. **Native** — a native module/TurboModule dispatching to a native background thread, returning a Promise ([04](04-native-modules-components-and-platform-code.md)).
-2. **Chunk and yield** — split loops across turns (`setTimeout`/`requestIdleCallback`); total time is unchanged but the thread stops being monopolised.
+2. **Chunk and yield** — split loops across turns (`setTimeout`/`requestIdleCallback`); total time is unchanged but the thread stops being monopolized.
 3. **Defer** until interactions settle (`requestIdleCallback`; the old `InteractionManager` is removed).
 4. **Second JS runtime** — worklets for per-frame UI work or a worker-style library for general computation.
 5. **Move off-device** — compute on the server if the phone doesn't need to.
@@ -234,10 +246,10 @@ Trap worth naming: pure JS never blocks the **UI thread** (separate thread); it 
 1. Assuming `setTimeout`/`fetch`/`requestAnimationFrame` are engine features, or that Hermes provides them.
 2. Treating timer delays as guarantees; `setInterval` for clocks/counters (drift).
 3. Believing React Native is single-threaded (only JS execution is).
-4. Expecting `async/await` or `Promise.all` to parallelise CPU work.
+4. Expecting `async/await` or `Promise.all` to parallelize CPU work.
 5. Long synchronous loops, big JSON parses or large list transforms on the JS thread during interactions.
 6. Closures in long-lived callbacks retaining large scopes; unremoved listeners/timers.
-7. Relying on engine quirks or debug-only behaviour that differs in release builds on Hermes.
+7. Relying on engine quirks or debug-only behavior that differs in release builds on Hermes.
 8. Writing benchmarks that assume a JIT; Hermes is interpreter-first (no JIT in V1).
 9. Using the removed `InteractionManager`, or code paths that assumed swallowed promise rejections.
 10. Mistaking native-driven animation smoothness for a healthy JS thread.
@@ -272,7 +284,7 @@ Trap worth naming: pure JS never blocks the **UI thread** (separate thread); it 
 ## 12. Interview Questions — Senior Scenarios
 
 ### S1. "A screen freezes for ~3 s after a large API response, but scrolling a native list still works. Explain and fix."
-JS thread blocked (large `JSON.parse`/transform/render) while the UI thread keeps scrolling committed native content. Confirm with DevTools profiler/Long Tasks API; fix by trimming payloads/pagination, moving heavy transforms to native or chunking with yields, memoising derived data, rendering fewer items; add a long-task metric (`PerformanceObserver`) to catch regressions ([05](05-performance-rendering-lists-images-and-memory.md)).
+JS thread blocked (large `JSON.parse`/transform/render) while the UI thread keeps scrolling committed native content. Confirm with DevTools profiler/Long Tasks API; fix by trimming payloads/pagination, moving heavy transforms to native or chunking with yields, memoizing derived data, rendering fewer items; add a long-task metric (`PerformanceObserver`) to catch regressions ([05](05-performance-rendering-lists-images-and-memory.md)).
 
 ### S2. "Our timers/clock drift and fire in bursts after the app returns from background. Why?"
 JS may be suspended in the background; `setInterval` ticks are scheduled relative to callbacks and queued behind work. Use timestamps (`Date.now`/server time) for elapsed logic, resync on foreground via `AppState`, and avoid relying on JS timers for background work ([08](08-app-lifecycle-background-work-push-and-deep-links.md)).
@@ -281,7 +293,7 @@ JS may be suspended in the background; `setInterval` ticks are scheduled relativ
 Since 0.82 uncaught rejections surface via `console.error`/the uncaught-error path rather than being swallowed. Triage: add `.catch`/`try/await`, fix real failures, group/deduplicate in the reporter, and add a global handler policy ([10](10-app-architecture-state-and-navigation.md)).
 
 ### S4. "Is Hermes V1 a free upgrade?"
-Default since 0.84, with reported TTI/bundle-load gains that depend on the app. Validate with startup traces on low-end Android and real devices, check libraries relying on engine behaviour, verify via `HermesInternal.getRuntimeProperties()`, and compare crash/ANR and memory metrics before widening rollout.
+Default since 0.84, with reported TTI/bundle-load gains that depend on the app. Validate with startup traces on low-end Android and real devices, check libraries relying on engine behavior, verify via `HermesInternal.getRuntimeProperties()`, and compare crash/ANR and memory metrics before widening rollout.
 
 ### S5. "A CPU-heavy image/filter operation must run on-device without jank."
 Implement it natively (TurboModule/Expo module on a background thread) or via a worklet runtime if it is per-frame UI work; return results by Promise; show progress; avoid shipping megabytes through JS (use typed buffers/`ArrayBuffer` or file URIs) ([04](04-native-modules-components-and-platform-code.md)).
