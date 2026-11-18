@@ -143,7 +143,7 @@ Native library for others to consume → always ship a **typed spec** (Codegen) 
 
 ## 6. JS to Native and Native to JS Communication
 
-**JS → native:** via the module/component spec — a direct JSI call in the New Architecture (legacy: serialised Bridge message). JS never calls Swift/Kotlin directly; it calls a JS-visible object backed by native code.
+**JS → native:** via the module/component spec — a direct JSI call in the New Architecture (legacy: serialized Bridge message). JS never calls Swift/Kotlin directly; it calls a JS-visible object backed by native code.
 
 **Native → JS (three ways)**
 ```mermaid
@@ -200,6 +200,30 @@ flowchart LR
 | `Component.native.tsx` | File | Build time (per bundler) | RN vs web/Node (no iOS/Android difference); tell the web bundler to ignore `*.native.*` |
 
 - **`Platform.select` precedence:** specific platform key → `native` → `default`. It can select **components** too.
+
+```tsx
+import { Platform, StyleSheet } from 'react-native';
+
+const styles = StyleSheet.create({
+  shadowBox: {
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 4 },
+      android: { elevation: 4 },
+      default: {},
+    }),
+  },
+});
+
+// Component selection (both branches are bundled; see the trap below)
+const Picker = Platform.select({
+  ios: () => require('./IOSPicker').default,
+  android: () => require('./AndroidPicker').default,
+})!();
+
+// File-extension resolution (Metro picks at build time):
+//   Button.ios.tsx, Button.android.tsx  ->  import Button from './Button'
+//   Button.native.tsx / Button.tsx      ->  native vs web or Node
+```
 - **`Platform.Version`** differs by platform: **Android = API level (integer)**; **iOS = version string** (`"10.3"`, parse the major).
 - **Platform-only props** are flagged `@platform` in the RN docs.
 - **Runtime vs build-time trap:** with `Platform.select`/`Platform.OS` **both branches are in the same bundle**, so a branch importing a platform-only native library can break the other platform even if never executed; file extensions guarantee the other file is **never bundled**.
@@ -228,7 +252,7 @@ flowchart LR
 ## 11. Interview Questions — Fundamentals
 
 - **Native Module vs Native Component?** Functionality (no UI) vs a renderable native view; often shipped together.
-- **How does JS call native code?** Through a JS-visible module backed by native code: serialised Bridge messages (legacy) or direct JSI references (TurboModules).
+- **How does JS call native code?** Through a JS-visible module backed by native code: serialized Bridge messages (legacy) or direct JSI references (TurboModules).
 - **How does native call JS?** Resolve a Promise/callback, emit an event (`NativeEventEmitter`), or invoke a callback prop.
 - **What is a Native Event?** Native-pushed data JS didn't request as a return value; from modules via emitters, from components via callback props.
 - **How do you expose a Swift function?** Spec → Codegen protocol → Swift implementation → Objective-C bridging/registration → Promise for async work.
