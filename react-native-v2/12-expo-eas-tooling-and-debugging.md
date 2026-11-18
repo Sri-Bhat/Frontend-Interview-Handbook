@@ -48,9 +48,9 @@ flowchart LR
 
 | Option | What it is | Choose when | Watch out |
 |---|---|---|---|
-| **Expo (managed + CNG)** | Framework with SDK modules, Expo Router, prebuild, config plugins, EAS | Default for most apps and teams; fastest upgrades, great DX, OTA, CI integration | Learn config plugins and prebuild; native customisation via plugins/Expo Modules |
+| **Expo (managed + CNG)** | Framework with SDK modules, Expo Router, prebuild, config plugins, EAS | Default for most apps and teams; fastest upgrades, great DX, OTA, CI integration | Learn config plugins and prebuild; native customization via plugins/Expo Modules |
 | **Expo with development builds** | Your own native client with chosen native modules | Any app using custom native modules/SDKs | Rebuild when native inputs change (fingerprint tells you) |
-| **Bare React Native CLI** | `npx @react-native-community/cli@latest init` — you own `ios/` and `android/` | Deep native customisation, existing native apps (brownfield), strict control | You own native upgrades (Upgrade Helper), more CI/native maintenance |
+| **Bare React Native CLI** | `npx @react-native-community/cli@latest init` — you own `ios/` and `android/` | Deep native customization, existing native apps (brownfield), strict control | You own native upgrades (Upgrade Helper), more CI/native maintenance |
 | **Brownfield integration** | RN embedded in an existing native app | Incremental adoption in large native apps | Threading, navigation, build-system, and release-coordination complexity ([15](15-senior-scenarios-and-system-design.md)) |
 
 - **Expo Go vs development build:** Expo Go is a fixed sandbox client with a fixed native module set (login required since SDK 57; it only supports the **current SDK** once the new Expo Go ships). Production apps use **development builds** (`expo-dev-client`) containing exactly your native modules ([12 §3](#3-expo-building-blocks)).
@@ -62,7 +62,7 @@ flowchart LR
 ## 3. Expo Building Blocks
 
 - **Expo SDK modules** (`expo-camera`, `expo-secure-store`, `expo-notifications`, `expo-sqlite`, `expo-file-system`, `expo-image`, …) implemented with the **Expo Modules API** (Swift/Kotlin; 2.0 beta with annotated classes) and autolinking ([04](04-native-modules-components-and-platform-code.md)).
-- **Continuous Native Generation (CNG) / prebuild:** the `ios/` and `android/` projects are **generated** from `app.json`/`app.config.ts` plus **config plugins**, so upgrades regenerate native projects (delete and re-run prebuild: `npx expo prebuild`). Treat native folders as build artefacts unless you deliberately adopt them *(hedged)*.
+- **Continuous Native Generation (CNG) / prebuild:** the `ios/` and `android/` projects are **generated** from `app.json`/`app.config.ts` plus **config plugins**, so upgrades regenerate native projects (delete and re-run prebuild: `npx expo prebuild`). Treat native folders as build artifacts unless you deliberately adopt them *(hedged)*.
 - **Config plugins:** functions that modify native config (Info.plist, AndroidManifest, Gradle, entitlements) at prebuild; used by libraries so you don't edit native files by hand.
 - **Fingerprint:** hashes native inputs to decide whether a new **native build** is needed vs an OTA update ([13 §3](13-ota-updates-and-store-releases.md#3-ota-compatibility-versioning-and-channels)); SDK 58's `balanced` preset ignores noise like `version` bumps.
 - **Expo Router:** file-based routing built on React Navigation concepts ([10 §4](10-app-architecture-state-and-navigation.md#4-navigation)).
@@ -175,7 +175,7 @@ flowchart LR
 5. Debugging performance in Debug builds; ignoring Release-only (R8, bytecode, permissions) differences.
 6. Not uploading source maps/dSYMs/R8 mappings, making crash reports unreadable.
 7. Pinned apps that can't be debugged through proxies in non-production builds.
-8. Overlooking `NODE_ENV`/`.env` behaviour changes (Expo SDK 58) when relying on custom environments.
+8. Overlooking `NODE_ENV`/`.env` behavior changes (Expo SDK 58) when relying on custom environments.
 9. Using unmaintained libraries without New Architecture support; stale `patch-package` patches.
 10. Shipping agent-generated or auto-fixed changes without review/tests.
 11. No device-matrix testing for iOS 27/Android 15+ edge-to-edge changes.
