@@ -29,10 +29,10 @@
 ## 1. Quick Summary (TL;DR)
 
 - **Architecture** = how JS logic, the renderer, native modules and the JS↔native channel fit together. React itself (Fiber/reconciliation) is the same in both generations; what changed is everything **below** React.
-- **Old (Bridge, 2015–2024):** JS, shadow/layout and UI lanes talked only through an **asynchronous, batched, JSON-serialising Bridge** → no sync calls, serialization tax, batching latency, eager module init, no type safety, duplicated per-platform rendering code, no concurrent rendering.
+- **Old (Bridge, 2015–2024):** JS, shadow/layout and UI lanes talked only through an **asynchronous, batched, JSON-serializing Bridge** → no sync calls, serialization tax, batching latency, eager module init, no type safety, duplicated per-platform rendering code, no concurrent rendering.
 - **New (default 0.76, only since 0.82):** **JSI** (direct C++ references) + **Fabric** (shared C++ renderer) + **TurboModules** (lazy, typed native modules) + **Codegen** (build-time contract) — the "four pillars", adopted together.
 - **Fabric pipeline:** **Render** (JS builds immutable shadow nodes via JSI) → **Commit** (Yoga layout + tree promotion, often background thread) → **Mount** (diff + apply to native views on the UI thread).
-- **React's** render/commit and **Fabric's** render/commit/mount are **different layers**: React's commit *triggers* Fabric's render step.
+- **React's** render/commit and **Fabric's** render/commit/mount are **different layers**: shadow nodes are created while React invokes host components (Fabric Render), and the finished tree is committed (layout + promotion) before Mount. The exact alignment with React's phases is not officially specified ([03 §6](03-react-internals-and-rendering-in-react-native.md#6-render-vs-commit-and-react-vs-fabric-phases)).
 - The New Architecture is an **enabler**, not a speed switch: apps benefit by using sync layout, concurrent features and typed native modules.
 - **Today:** nobody opts out; migration work is about **third-party library compatibility**, removing legacy APIs, and the interop layers.
 
@@ -80,7 +80,7 @@ Plus extra native-module threads. Lanes exchanged data **only via the Bridge**.
 ### 3.2 The Bridge
 A JS object (`MessageQueue.js`) plus a native counterpart — the **only** channel.
 - **Asynchronous only:** no value returned on the same stack frame; even "instant" questions (`measure`) were callbacks.
-- **Serialization:** no shared memory, so every argument/return was **JSON-serialised → copied → deserialised**; cost scales with payload size and call frequency.
+- **Serialization:** no shared memory, so every argument/return was **JSON-serialized → copied → deserialized**; cost scales with payload size and call frequency.
 - **Batching:** queues flushed together (per JS tick / native frame) → fewer crossings but added latency; a busy JS thread backed up **both** outgoing calls and incoming events (touches, scroll).
 - **Message shape:** roughly `[moduleID, methodID, args]` for calls; UI mutations (`createView`, `updateView`, `manageChildren`) the same way in reverse.
 - **Large data:** each call paid full serialize→copy→deserialize; e.g. camera frames of ~30 MB at ~2 GB/s were impossible to move in real time.
@@ -90,12 +90,12 @@ sequenceDiagram
   participant JS as JS thread
   participant B as Bridge queue
   participant N as Native module
-  JS->>B: multiply(3, 4, callback) serialised to JSON
+  JS->>B: multiply(3, 4, callback) serialized to JSON
   Note over B: queued, not sent yet
-  B->>N: batch flush, deserialise, invoke real method
-  N-->>B: result serialised to JSON
+  B->>N: batch flush, deserialize, invoke real method
+  N-->>B: result serialized to JSON
   Note over B: queued again
-  B-->>JS: batch flush, deserialise, invoke callback
+  B-->>JS: batch flush, deserialize, invoke callback
 ```
 
 ### 3.3 Why the Bridge existed
@@ -106,7 +106,7 @@ JS and native were separate runtimes with **no shared memory**, and no API like 
 2. **Serialization tax** on every call.
 3. **Batching latency** (up to a tick).
 4. **JS-thread contention** — all traffic shares one queue tied to the JS loop.
-5. **Eager module initialisation** → slow startup/TTI.
+5. **Eager module initialization** → slow startup/TTI.
 6. **No type safety** — mismatches were runtime bugs.
 7. **Duplicated per-platform renderer logic** (Java and Obj-C shadow tree/layout/flattening).
 8. **No concurrent rendering** support (Suspense, transitions, automatic batching).
@@ -171,7 +171,7 @@ The New Architecture's native-module system: a JSI `HostObject` per module.
 
 | | Legacy Native Modules | TurboModules |
 |---|---|---|
-| Initialisation | **Eager** at startup | **Lazy** — constructed on first JS reference (`TurboModuleRegistry.getEnforcing`) |
+| Initialization | **Eager** at startup | **Lazy** — constructed on first JS reference (`TurboModuleRegistry.getEnforcing`) |
 | Transport | Bridge (async, JSON) | JSI (direct, sync-capable) |
 | Contract | Untyped | Codegen-checked at build time |
 | Dispatch logic | Per platform | Shared C++ registry/lookup |
@@ -223,7 +223,7 @@ flowchart LR
   A["React element tree (JS)"] --> B["Shadow tree with layout (C++)"] --> C["Native view tree (OS)"]
 ```
 
-- **Yoga:** Meta's C Flexbox engine computing x/y/width/height; in Fabric integrated in the shared C++ core (no JNI hop for layout), run during Commit. It computes geometry only; Mount turns geometry into views ([07](07-ui-styling-layout-accessibility-and-localization.md) for Flexbox behaviour).
+- **Yoga:** Meta's C Flexbox engine computing x/y/width/height; in Fabric integrated in the shared C++ core (no JNI hop for layout), run during Commit. It computes geometry only; Mount turns geometry into views ([07](07-ui-styling-layout-accessibility-and-localization.md) for Flexbox behavior).
 - **View flattening:** during diffing, **layout-only** nodes (e.g. a margin wrapper `View` with no paint props) are merged into their parent, shrinking the host tree; formerly Android-only, now default on both platforms in C++.
 - **`<View />` journey:** host component → `ViewShadowNode` (props + placeholder layout) → Yoga sets geometry → diff may **flatten it away** or create/update the real view on the UI thread.
 
@@ -231,7 +231,11 @@ flowchart LR
 
 ## 10. Threading Model: One Pipeline, Either Thread
 
-Two renderer threads: the **UI thread** (the only one that may touch host views) and the **JS thread** (React render and, usually, layout). Because Fabric's data structures are immutable and thread-safe, the pipeline can run on either:
+Two renderer threads: the **UI thread** (the only one that may touch host views) and the **JS thread** (per the threading-model doc: "where React's render phase, as well as layout, are executed"). Because Fabric's data structures are immutable and thread-safe, the pipeline can run on either.
+
+**Documentation caveat:** the render-pipeline page says layout calculation and tree promotion "are asynchronously executed on a background thread", while the threading-model page places layout on the JS thread. Both pages are dated (last updated Nov 2023 and Sep 2024) and carry an "active roll-out" caption, so treat the *exact* thread of the Commit step as implementation-dependent *(hedged)*; the safe, documented claims are: Render usually on the JS thread, Mount always on the UI thread, and the pipeline can run entirely on the UI thread for high-priority events.
+
+Scale numbers from the render-pipeline doc: a shadow tree is typically **~600-1000 nodes** before view flattening and **~200** after (up to ~10x on iPad/desktop).
 
 | Scenario | What happens |
 |---|---|
@@ -239,7 +243,7 @@ Two renderer threads: the **UI thread** (the only one that may touch host views)
 | **Render in UI thread** | High-priority UI event: whole pipeline synchronous on the UI thread, no hop to JS |
 | **Default/continuous event interruption** | A low-priority UI event interrupts an in-progress JS render; state merged, rendering continues on JS thread |
 | **Discrete event interruption** | A high-priority UI event interrupts a JS render; render finishes synchronously on the UI thread |
-| **C++ state update** | Native-owned state (e.g. `ScrollView` offset) skips React render entirely, committing on any thread |
+| **C++ state update** | Native-owned state (e.g. `ScrollView` offset) skips React render entirely, committing on any thread; the renderer retries the C++ state commit if React (or another update) committed in between, preventing races |
 
 Takeaways: heavy JS no longer *has* to block high-priority native interactions, but frame-critical work (gestures, animations) still prefers **worklets on the UI thread** ([06](06-startup-bundle-animations-and-gestures.md)). Thread-level consequences of a blocked JS thread: [01](01-javascript-runtime-hermes-and-event-loop.md#7-what-happens-when-the-js-thread-is-blocked).
 
@@ -247,12 +251,12 @@ Takeaways: heavy JS no longer *has* to block high-priority native interactions, 
 
 ## 11. End-to-End Walkthrough: A Button Tap
 
-**Old:** touch on the UI thread → serialised and queued across the Bridge → JS thread handler/`setState` → React render/commit via `UIManager` → UI instructions serialised and queued back → native deserialises → shadow thread runs Yoga → UI thread applies and paints. **Every arrow paid serialisation plus batching.**
+**Old:** touch on the UI thread → serialized and queued across the Bridge → JS thread handler/`setState` → React render/commit via `UIManager` → UI instructions serialized and queued back → native deserializes → shadow thread runs Yoga → UI thread applies and paints. **Every arrow paid serialization plus batching.**
 
 **New:**
 1. UI thread detects the touch; delivered to JS without JSON.
-2. Handler calls `setState`; React render phase, then commit, which **synchronously (via JSI)** creates/updates shadow nodes — Fabric's **Render** (JS thread, or UI thread for high-priority events).
-3. Fabric **Commit**: Yoga layout + promotion (typically background thread).
+2. Handler calls `setState`; React render phase creates/clones shadow nodes **synchronously via JSI** — Fabric's **Render** (JS thread, or UI thread for high-priority events) — then React commits.
+3. Fabric **Commit**: Yoga layout + promotion (the docs describe a background thread, but disagree; see §10).
 4. Fabric **Mount**: C++ diff (with view flattening), minimal mutations applied **synchronously on the UI thread**, frame painted.
 No JSON anywhere; lazily created TurboModules handle imperative native calls the handler makes.
 
@@ -263,7 +267,7 @@ No JSON anywhere; lazily created TurboModules handle imperative native calls the
 | Version | Milestone |
 |---|---|
 | **0.68** | New Architecture opt-in |
-| **0.76** (Oct 2024) | **Default** for new apps (bridgeless mode on) |
+| **0.76** (Oct 2024) | **Default** for new apps (bridgeless mode on *(hedged: confirm against the 0.76 release post)*) |
 | **0.80** (Jun 2025) | **Legacy Architecture frozen**; warnings for APIs that will stop working; deep-import deprecations |
 | **0.81** / Expo SDK 54 | **Last versions that allow the Legacy Architecture**; extra warnings/perf work to ease migration |
 | **0.82** (Oct 2025) | **New Architecture only** (flags ignored); interop layers kept |
@@ -287,7 +291,7 @@ No JSON anywhere; lazily created TurboModules handle imperative native calls the
 | Renderer | `UIManager` + per-platform shadow trees | **Fabric**: shared C++ core |
 | Layout measurement | Async (`measure(cb)`) | Can be synchronous |
 | Concurrent React | Unsupported | Supported |
-| Large data | Serialise/copy/deserialise | By reference via JSI |
+| Large data | Serialize/copy/deserialize | By reference via JSI |
 | View flattening | Android only | Both platforms (C++ diff) |
 | Threading | Rigid JS/shadow/UI | Pipeline can run on JS or UI thread |
 | Status | Frozen 0.80; allowed through 0.81 | Default 0.76; **only** since 0.82 |
@@ -311,9 +315,9 @@ No JSON anywhere; lazily created TurboModules handle imperative native calls the
 
 ## 15. Interview Questions — Fundamentals
 
-- **What is the Bridge and why was it a bottleneck?** Async, batched, JSON-serialising queue between JS and native: serialization tax, batching latency, no sync calls, JS-thread contention.
+- **What is the Bridge and why was it a bottleneck?** Async, batched, JSON-serializing queue between JS and native: serialization tax, batching latency, no sync calls, JS-thread contention.
 - **Why was the Bridge needed?** Separate runtimes without shared memory and no JSI-style direct reference mechanism.
-- **Walk through a native call in the old architecture.** Serialise `[moduleId, methodId, args]` → queue → batch flush → deserialise → invoke → serialise result → queue → deserialise → callback.
+- **Walk through a native call in the old architecture.** Serialize `[moduleId, methodId, args]` → queue → batch flush → deserialize → invoke → serialize result → queue → deserialize → callback.
 - **Why was JSON a problem?** CPU/memory cost scaling with payload and frequency; no passing functions/buffers by reference; ~30 MB frames impossible.
 - **What is JSI?** C++ interface for direct JS↔native references; engine-implemented; no serialization.
 - **Does JSI replace the JS engine?** No; engines implement it.
@@ -329,7 +333,7 @@ No JSON anywhere; lazily created TurboModules handle imperative native calls the
 - **Role of Yoga?** Computes Flexbox geometry during Commit.
 - **What is view flattening?** Merging layout-only nodes into parents during diffing to shrink the native hierarchy.
 - **How does a component become a native view?** Host component → shadow node (Render) → Yoga layout (Commit) → diff and mutation on UI thread (Mount).
-- **What happens on state change?** React render/commit in JS (creating shadow nodes via JSI) → Fabric commit (layout) → mount (UI thread).
+- **What happens on state change?** React renders (shadow nodes created/cloned via JSI) and commits → Fabric commit (layout, promotion) → mount (UI thread).
 - **What runs on JS vs native?** React render and shadow node creation in JS (usually); layout in C++ background; mount on UI thread; drawing/input in OS.
 - **How does Fabric enable concurrent rendering?** Immutable, structurally shared trees allow multiple versions in flight and interruption.
 - **What is bridgeless mode?** The New Architecture without the legacy Bridge object *(hedged)*.
@@ -395,6 +399,10 @@ flowchart TD
 | **Codegen** | Build-time generator of native contracts from JS/TS specs |
 | **Fabric** | The C++ shared renderer |
 | **Shadow tree / node** | Immutable C++ tree of props + layout |
+| **React Host Component** | A component backed by a native view (`View`, `Text`); gets a shadow node |
+| **React Composite Component** | A component that renders other components (`MyComponent`); never has a shadow node |
+| **Yoga tree** | The layout tree Yoga computes geometry on, built from shadow nodes |
+| **Next tree / rendered tree** | Promoted-but-unmounted tree / tree currently on screen; Mount diffs them |
 | **Yoga** | Flexbox layout engine |
 | **View flattening** | Removing layout-only views from the native hierarchy |
 | **Interop layer** | Wrappers letting legacy modules/components run on the New Architecture |
