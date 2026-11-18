@@ -22,8 +22,9 @@ Production-oriented interview preparation for Senior Frontend, Senior React, Rea
 | Browser Internals (architecture, navigation, rendering, JS runtime, storage, security, DOM/events) | [browser-internals/README.md](browser-internals/README.md) · [recall map](browser-internals/08-browser-internals-recall-map.md) | Complete |
 | Web Security (threat model, XSS/Trusted Types, CSP, cookies/CSRF, auth/BFF, headers/CORS, supply chain, secure patterns) | [web-security/README.md](web-security/README.md) · [recall map](web-security/09-web-security-recall-map.md) | Complete |
 | Networking & APIs (HTTP, Fetch, REST design, GraphQL/tRPC/gRPC, real-time, resilience, API client architecture, debugging) | [networking-and-apis/README.md](networking-and-apis/README.md) · [recall map](networking-and-apis/09-networking-and-apis-recall-map.md) | Complete |
+| Testing (strategy, unit, component, E2E/Playwright, visual/a11y, contract/integration, CI/flakiness, practice) | [testing/README.md](testing/README.md) · [recall map](testing/09-testing-recall-map.md) | Complete |
 | React Native | [react-native/README.md](react-native/README.md) · [recall map](react-native/17-master-mental-model-recall-map.md) | Existing |
 | JavaScript | [js/01](js/01-arrays-objects-collections-and-modern-syntax.md) · [js/02](js/02-frontend-specific-coding.md) · [js/03](js/03-advanced-fundamentals-and-coding.md) | Existing |
 | DSA for frontend | [dsa-for-fe/](dsa-for-fe/01-hashmap-pattern.md) · [dsa-topics/](dsa-topics/01-array-problems.md) | Existing |
 
-Planned categories: Testing, Frontend Architecture, HTML & CSS, Accessibility, Debugging Scenarios, Leadership, CI/CD (web).
+Planned categories: Frontend Architecture, HTML & CSS, Accessibility, Debugging Scenarios, Leadership, CI/CD (web).
