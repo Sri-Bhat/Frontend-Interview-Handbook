@@ -1,6 +1,6 @@
 # App Lifecycle, Background Work, Push Notifications, Deep Links and Permissions
 
-> Verification note: RN-facing facts were checked against the official docs for **`AppState`**, **`Linking`**, **`PermissionsAndroid`**, **Headless JS (Android)** and the (deprecated) **`PushNotificationIOS`** page, plus the **reactnative.dev 0.88 post** (iOS **`SceneDelegate` lifecycle support**) and the **Expo SDK 58 changelog (Oct 2026)**: iOS 27 **requires the UIKit scene-based lifecycle** (prebuild now generates `SceneDelegate.swift` and a `UIApplicationSceneManifest` entry; app-delegate callbacks are delivered differently, so customised `AppDelegate.swift` files need migration); `requireFullScreen` no longer opts out of resizing and `ScreenOrientation.lockAsync` may have no effect; `expo-notifications` now **shows foreground notifications by default** unless your handler says otherwise, can group by `threadIdentifier` (iOS) and offers `delivery: 'alarmClock'` for time-critical Android alarms; `expo-linking` reserves `__expo_`-prefixed launch parameters; Expo Observe records native crashes. Uncaught promise rejections are reported since **0.82**; `InteractionManager` was removed in **0.87**. **Native lifecycle callback names, iOS background execution budgets, `BGTaskScheduler`/WorkManager details, FCM/APNs payload semantics, Android 13+ notification permission and `expo-task-manager`/`react-native-background-fetch` specifics are established platform knowledge not re-fetched in this session — marked *(hedged)* where specific.** Timer basics: [01](01-javascript-runtime-hermes-and-event-loop.md#4-host-apis-timers-fetch-requestanimationframe-and-friends); security of deep links: [11](11-mobile-security.md#6-deep-link-security); navigation `linking` config: [10](10-app-architecture-state-and-navigation.md#6-navigation-state-deep-link-config-and-app-restart).
+> Verification note: RN-facing facts were checked against the official docs for **`AppState`**, **`Linking`**, **`PermissionsAndroid`**, **Headless JS (Android)** and the (deprecated) **`PushNotificationIOS`** page, plus the **reactnative.dev 0.88 post** (iOS **`SceneDelegate` lifecycle support**) and the **Expo SDK 58 changelog (Oct 2026)**: iOS 27 **requires the UIKit scene-based lifecycle** (prebuild now generates `SceneDelegate.swift` and a `UIApplicationSceneManifest` entry; app-delegate callbacks are delivered differently, so customized `AppDelegate.swift` files need migration); `requireFullScreen` no longer opts out of resizing and `ScreenOrientation.lockAsync` may have no effect; `expo-notifications` now **shows foreground notifications by default** unless your handler says otherwise, can group by `threadIdentifier` (iOS) and offers `delivery: 'alarmClock'` for time-critical Android alarms; `expo-linking` reserves `__expo_`-prefixed launch parameters; Expo Observe records native crashes. Uncaught promise rejections are reported since **0.82**; `InteractionManager` was removed in **0.87**. **Native lifecycle callback names, iOS background execution budgets, `BGTaskScheduler`/WorkManager details, FCM/APNs payload semantics, Android 13+ notification permission and `expo-task-manager`/`react-native-background-fetch` specifics are established platform knowledge not re-fetched in this session — marked *(hedged)* where specific.** Timer basics: [01](01-javascript-runtime-hermes-and-event-loop.md#4-host-apis-timers-fetch-requestanimationframe-and-friends); security of deep links: [11](11-mobile-security.md#6-deep-link-security); navigation `linking` config: [10](10-app-architecture-state-and-navigation.md#6-navigation-state-deep-link-config-and-app-restart).
 
 ## Table of Contents
 
@@ -25,12 +25,12 @@
 
 ## 1. Quick Summary (TL;DR)
 
-- **Startup order:** OS launches the process → native bootstrap (`AppDelegate`/`SceneDelegate` on iOS, `MainApplication`/`MainActivity` on Android) → RN runtime and Hermes initialised → **bundle loaded** → `AppRegistry.registerComponent` → `runApplication` → React render → Fabric mount → first frame. **JS doesn't choose its own bundle location**; native does.
+- **Startup order:** OS launches the process → native bootstrap (`AppDelegate`/`SceneDelegate` on iOS, `MainApplication`/`MainActivity` on Android) → RN runtime and Hermes initialized → **bundle loaded** → `AppRegistry.registerComponent` → `runApplication` → React render → Fabric mount → first frame. **JS doesn't choose its own bundle location**; native does.
 - **Debug** fetches the bundle from **Metro** and has dev tooling; **Release** embeds a precompiled static bundle (Hermes bytecode) and needs no Metro ([06](06-startup-bundle-animations-and-gestures.md)).
 - **`AppState`** (`active`, `background`, iOS-only `inactive`) is a **native module** re-emitting OS lifecycle callbacks; iOS 27 / Xcode 27 builds require the **scene-based lifecycle**.
 - **Background ≠ running.** The OS suspends or kills apps; JS timers stop. Never build "reliability" on JS timers; use OS-sanctioned mechanisms (Android **Headless JS**/WorkManager, iOS **Background Modes/BGTaskScheduler**) and recompute from timestamps on resume.
 - **Push:** APNs (iOS) / FCM (Android) deliver; killed-app handling is **native first**; JS sees the payload via the **initial-notification** pattern. Same **cold/warm** pattern for deep links (`getInitialURL` vs `url` event).
-- **Permissions:** Android has core `PermissionsAndroid`; iOS needs native frameworks per permission plus **`Info.plist` usage strings** (missing key = crash). Use a normalising library.
+- **Permissions:** Android has core `PermissionsAndroid`; iOS needs native frameworks per permission plus **`Info.plist` usage strings** (missing key = crash). Use a normalizing library.
 - **What crashes what:** a *blocked* JS thread crashes nothing; an uncaught JS error is catchable; a fatal native fault anywhere (Hermes, UI thread) kills the **whole process**.
 
 ```mermaid
@@ -52,12 +52,12 @@ flowchart TD
 2. **Native bootstrap**
    - **iOS:** `main()` → `UIApplicationMain` → `AppDelegate` (`application:didFinishLaunchingWithOptions:`); RN templates configure an `RCTAppDelegate` subclass / `ReactNativeFactory`. With **iOS 27's required scene lifecycle** the window is created by a **`SceneDelegate`** (RN 0.88 adds support; Expo SDK 58 prebuild generates it) — AppDelegate callbacks for URLs, user activities and quick actions move to scene delegate paths, which Expo forwards to its app-delegate subscribers *(see migration guide if you hand-edit `AppDelegate.swift`)*.
    - **Android:** the OS instantiates `MainApplication` (a `ReactApplication`), then `MainActivity` (extends `ReactActivity`), which obtains the RN instance via `ReactHost`.
-3. **Runtime initialisation:** the JS engine is instantiated (Hermes by default), **JSI** is bound, the **native module registry** is prepared. Legacy modules were eagerly created here; **TurboModules are lazy**, a measurable startup win ([02](02-architecture-bridge-to-new-architecture.md#6-turbomodules)).
-4. **Hermes initialisation vs compilation:** the VM is created at every launch (milliseconds); the **expensive compile to bytecode (`hermesc`) happened at build time** — in Release the VM loads precompiled bytecode with no parse/compile step.
+3. **Runtime initialization:** the JS engine is instantiated (Hermes by default), **JSI** is bound, the **native module registry** is prepared. Legacy modules were eagerly created here; **TurboModules are lazy**, a measurable startup win ([02](02-architecture-bridge-to-new-architecture.md#6-turbomodules)).
+4. **Hermes initialization vs compilation:** the VM is created at every launch (milliseconds); the **expensive compile to bytecode (`hermesc`) happened at build time** — in Release the VM loads precompiled bytecode with no parse/compile step.
 5. **Bundle loading:** the first substantive JS-thread work. **Release:** a static bundle embedded in the app is read from disk. **Debug:** fetched over HTTP from Metro (`localhost:8081`), which is why debug cold starts are slower and require same-network or `adb reverse`.
 6. **How native finds the bundle** (JS can't — it doesn't exist yet): iOS bundle-URL provider returns a Metro URL in Debug and `main.jsbundle` inside the app bundle in Release; Android's `ReactNativeHost`/`ReactHost` uses the developer-support flag, reading `index.android.bundle` from packaged assets in Release.
 7. **Execute and render:** the bundle runs top to bottom ending in `AppRegistry.registerComponent`; native calls `AppRegistry.runApplication`; React renders, Fabric lays out and mounts, the first frame draws.
-> Everything from "RN runtime bootstrap" onward is platform-agnostic from JS's viewpoint. Startup optimisation (inline requires, lazy screens, bytecode, splash handling): [06](06-startup-bundle-animations-and-gestures.md).
+> Everything from "RN runtime bootstrap" onward is platform-agnostic from JS's viewpoint. Startup optimization (inline requires, lazy screens, bytecode, splash handling): [06](06-startup-bundle-animations-and-gestures.md).
 
 ---
 
@@ -163,7 +163,7 @@ flowchart LR
 - **Backgrounded/killed**
   - **Visible alert push:** the **OS renders the banner from the payload with no app code**; tapping **cold-launches** the app with the notification stored as the **initial notification** for JS to read once booted (same pattern as deep links).
   - **Silent/data push:** iOS `content-available: 1` may briefly wake the app (`didReceiveRemoteNotification:fetchCompletionHandler:`) under a short budget — **not guaranteed**; Android data messages go to `FirebaseMessagingService`, which can start a **Headless JS** task. Always **native first**, JS only if the native side spins it up, under hard time limits.
-- **Platform details** *(hedged)*: Android 13+ requires a runtime **`POST_NOTIFICATIONS`** permission and notification **channels**; iOS needs user authorisation (provisional/quiet options exist); iOS **thread grouping** (`threadIdentifier`) and Android `delivery: 'alarmClock'` for time-critical alarms are exposed by `expo-notifications` 58.
+- **Platform details** *(hedged)*: Android 13+ requires a runtime **`POST_NOTIFICATIONS`** permission and notification **channels**; iOS needs user authorization (provisional/quiet options exist); iOS **thread grouping** (`threadIdentifier`) and Android `delivery: 'alarmClock'` for time-critical alarms are exposed by `expo-notifications` 58.
 - **Fintech guidance:** never put sensitive data in payloads (they traverse third parties and lock screens); send an ID and fetch details after authentication; support **notification actions** carefully (re-auth for sensitive actions); deep-link taps through validated routes ([11](11-mobile-security.md#6-deep-link-security)).
 
 ---
@@ -201,11 +201,11 @@ useEffect(() => {
 
 | | Android | iOS |
 |---|---|---|
-| Core RN module | **`PermissionsAndroid`** (`check`, `request` with optional `rationale`, `requestMultiple`) | **None** — each framework has its own authorisation API |
+| Core RN module | **`PermissionsAndroid`** (`check`, `request` with optional `rationale`, `requestMultiple`) | **None** — each framework has its own authorization API |
 | Declaration | `AndroidManifest.xml` | **Usage-description string** in `Info.plist` (e.g. `NSCameraUsageDescription`) — requesting access without the key **terminates the app** |
 | Prompting | "Normal" permissions auto-granted at install; "dangerous" ones prompt at runtime | Every protected resource prompts once on first use |
 | Results | `GRANTED` / `DENIED` / `NEVER_ASK_AGAIN` | Framework-specific status enums |
-| JS access | Direct | Hand-written native module or a normalising library (`react-native-permissions`, Expo modules' `requestPermissionsAsync`) *(hedged)* |
+| JS access | Direct | Hand-written native module or a normalizing library (`react-native-permissions`, Expo modules' `requestPermissionsAsync`) *(hedged)* |
 
 **Internals:** JS never talks to the permission system; a native module calls the platform API and returns a Promise. The first request shows the **OS modal** (wording and appearance not controllable); later checks read cached OS state. UX: explain value before prompting, handle "denied forever" by deep-linking to Settings, degrade gracefully, ask in context (not on launch).
 
@@ -218,10 +218,10 @@ useEffect(() => {
 3. Missing `Info.plist` usage strings (iOS crash) or Android manifest permissions; prompting at launch.
 4. Heavy work in `AppState` handlers; no state persistence on `background`.
 5. Treating silent pushes as guaranteed delivery; sensitive data inside push payloads.
-6. Customising `AppDelegate`/`SceneDelegate` by hand without following the scene-lifecycle migration (iOS 27).
+6. Customizing `AppDelegate`/`SceneDelegate` by hand without following the scene-lifecycle migration (iOS 27).
 7. Assuming `ScreenOrientation.lockAsync`/full-screen opt-outs still apply on iOS 27 resizable apps.
 8. Running Headless JS in the foreground (crashes by default) or doing UI work in it.
-9. Shipping only Debug-tested behaviour (Metro-dependent assumptions) — test Release builds and R8/minify.
+9. Shipping only Debug-tested behavior (Metro-dependent assumptions) — test Release builds and R8/minify.
 10. Blindly trusting deep-link parameters.
 
 ---
@@ -230,7 +230,7 @@ useEffect(() => {
 
 - **What happens when an RN app starts?** Process launch → native bootstrap → runtime/Hermes/JSI/module registry → bundle load → `registerComponent` → `runApplication` → render → Fabric mount.
 - **Who finds the bundle?** Native configuration (Metro URL in debug, embedded bundle in release); JS cannot.
-- **When is Hermes initialised vs compiled?** VM created at launch; bytecode compiled at build time.
+- **When is Hermes initialized vs compiled?** VM created at launch; bytecode compiled at build time.
 - **Debug vs Release?** Metro bundle and dev tooling vs embedded precompiled bundle; dev menu off; permissions and signing differ; release is representative.
 - **Where does Metro fit?** Build/dev-time bundler (resolve → transform → serialize) and dev server; absent at runtime in release ([06](06-startup-bundle-animations-and-gestures.md)).
 - **What are the AppState values?** `active`, `background`, iOS-only `inactive`; Android `focus`/`blur` events.
