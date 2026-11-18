@@ -1,6 +1,6 @@
 # UI, Styling, Layout, Accessibility and Localization in React Native
 
-> Verification note: Release-specific facts were verified against **reactnative.dev posts (0.80 → 0.88, Nov 2026)** and the **Expo SDK 58 changelog (Oct 2026)**: **`SafeAreaView` (core) is deprecated since 0.81** (use `react-native-safe-area-context`); **edge-to-edge on Android 15+** is comprehensively supported from **0.86**; `StyleSheet.absoluteFillObject` was removed in **0.85** (use `StyleSheet.absoluteFill` or explicit styles); `AccessibilityInfo.setAccessibilityFocus` is deprecated in favour of `sendAccessibilityEvent` (0.85); `Appearance.setColorScheme()` no longer accepts `null` — use `'unspecified'` (0.82); **variable fonts** via `fontVariationSettings` on `Text`/`TextInput` (0.88) and in `expo-font` (SDK 58); in 0.87 `Modal`'s `animated` prop, `StatusBar` `backgroundColor`/`translucent`/`networkActivityIndicatorVisible` props and the `Touchable*` root export were removed and **`ImageBackground` was deprecated** (use a `View` with an absolutely positioned `Image`); **iOS 27 makes iPhone apps resizable** and iPhone Duo support requires attention to **window-size changes and horizontal safe-area insets** (Expo SDK 58); `expo-localization` on iOS no longer force-enables RTL from the device locale — layout direction follows `I18nManager` (SDK 58); Expo UI provides native SwiftUI/Jetpack Compose components. **Flexbox default values, `StyleSheet` details, the `aria-*` prop mapping, font scaling props, `Intl` support on Hermes, `boxShadow`/`filter` style props, keyboard-handling components and design-system libraries are established practice not re-fetched in this session — marked *(hedged)* where specific.** For web accessibility depth see the repo's web material; this file covers the React Native layer.
+> Verification note: Release-specific facts were verified against **reactnative.dev posts (0.80 → 0.88, Nov 2026)** and the **Expo SDK 58 changelog (Oct 2026)**: **`SafeAreaView` (core) is deprecated since 0.81** (use `react-native-safe-area-context`); **edge-to-edge on Android 15+** is comprehensively supported from **0.86**; `StyleSheet.absoluteFillObject` was removed in **0.85** (use `StyleSheet.absoluteFill` or explicit styles); `AccessibilityInfo.setAccessibilityFocus` is deprecated in favor of `sendAccessibilityEvent` (0.85); `Appearance.setColorScheme()` no longer accepts `null` — use `'unspecified'` (0.82); **variable fonts** via `fontVariationSettings` on `Text`/`TextInput` (0.88) and in `expo-font` (SDK 58); in 0.87 `Modal`'s `animated` prop, `StatusBar` `backgroundColor`/`translucent`/`networkActivityIndicatorVisible` props and the `Touchable*` root export were removed and **`ImageBackground` was deprecated** (use a `View` with an absolutely positioned `Image`); **iOS 27 makes iPhone apps resizable** and iPhone Duo support requires attention to **window-size changes and horizontal safe-area insets** (Expo SDK 58); `expo-localization` on iOS no longer force-enables RTL from the device locale — layout direction follows `I18nManager` (SDK 58); Expo UI provides native SwiftUI/Jetpack Compose components. **Flexbox default values, `StyleSheet` details, the `aria-*` prop mapping, font scaling props, `Intl` support on Hermes, `boxShadow`/`filter` style props, keyboard-handling components and design-system libraries are established practice not re-fetched in this session — marked *(hedged)* where specific.** For web accessibility depth see the repo's web material; this file covers the React Native layer.
 
 ## Table of Contents
 
@@ -10,7 +10,7 @@
 4. [Theming, Dark Mode and Design Systems](#4-theming-dark-mode-and-design-systems)
 5. [Text, Fonts, Images and Keyboard Handling](#5-text-fonts-images-and-keyboard-handling)
 6. [Accessibility](#6-accessibility)
-7. [Internationalisation and Localisation](#7-internationalisation-and-localisation)
+7. [Internationalization and Localization](#7-internationalization-and-localization)
 8. [Platform Conventions and Native UI](#8-platform-conventions-and-native-ui)
 9. [Pitfalls](#9-pitfalls)
 10. [Interview Questions — Fundamentals](#10-interview-questions--fundamentals)
@@ -26,13 +26,13 @@
 - **Styling is JS objects + Flexbox via Yoga**, not CSS: density-independent units, no cascade, `View` defaults to `flexDirection: 'column'`. Compose styles with `StyleSheet`, themes via context/tokens.
 - **Layout must adapt**: safe areas (notch, home indicator, **Android 15+ edge-to-edge**), keyboards, text scaling, tablets/foldables, split-screen and **resizable iOS 27 apps** — use `useWindowDimensions`, `react-native-safe-area-context` and container-aware layouts, not fixed sizes.
 - **Accessibility is a requirement**: roles, labels, states, focus order, touch targets, screen-reader testing (VoiceOver/TalkBack), dynamic type, reduce motion, contrast. Test with real assistive technology.
-- **i18n/RTL** are architectural: use logical properties (`start/end`), `Intl`/library formatting, externalised strings, plural rules, text expansion, and verify RTL mirroring (`I18nManager`).
-- **Dark mode** via `useColorScheme` and tokenised themes; keep contrast and image assets in mind.
+- **i18n/RTL** are architectural: use logical properties (`start/end`), `Intl`/library formatting, externalized strings, plural rules, text expansion, and verify RTL mirroring (`I18nManager`).
+- **Dark mode** via `useColorScheme` and tokenized themes; keep contrast and image assets in mind.
 - **Respect platform conventions** (Material vs HIG), use native navigation/controls where they matter, and keep hit targets ≥ ~44 pt / 48 dp.
 
 ```mermaid
 flowchart TB
-  T["Design tokens: colour, spacing, type, motion"] --> TH["Theme context: light, dark, high contrast"]
+  T["Design tokens: color, spacing, type, motion"] --> TH["Theme context: light, dark, high contrast"]
   TH --> C["Components: Pressable, Text, Input with a11y props"]
   C --> L["Layout: Flexbox, safe areas, window size, keyboard"]
   L --> P["Platform: iOS HIG, Android Material, tablets, foldables"]
@@ -64,7 +64,7 @@ flowchart TB
 | **Orientation** | iOS 27 resizable apps: `requireFullScreen` no longer opts out and `ScreenOrientation.lockAsync` may do nothing — design for rotation/resizing instead of locking |
 | **Foldables/hinge** | `expo-hinge` (SDK 58) reports hinge state (iOS 27.1+, Android 11 foldables); use hinge state for effects, not layout *(Apple guidance)*; Expo UI `ArrangementView` for primary/secondary layouts |
 | **Tablets** | Master/detail, multi-column layouts, constrained max widths, pointer/keyboard support |
-| **Keyboard** | `KeyboardAvoidingView` (behaviour differs per platform *(hedged)*), `keyboardShouldPersistTaps`, scroll-into-view on focus, dismiss on tap outside, handle hardware keyboards and iPad shortcuts |
+| **Keyboard** | `KeyboardAvoidingView` (behavior differs per platform *(hedged)*), `keyboardShouldPersistTaps`, scroll-into-view on focus, dismiss on tap outside, handle hardware keyboards and iPad shortcuts |
 | **Notches/cutouts, home indicator** | Insets, not magic numbers |
 
 **Tips:** avoid hard-coded heights; use `flex`, `min/max` constraints and `aspectRatio`; test on small phones, large phones, tablets, split-screen; use density-aware images (`@2x/@3x` or responsive sources).
@@ -74,17 +74,17 @@ flowchart TB
 ## 4. Theming, Dark Mode and Design Systems
 
 - **Dark mode:** `useColorScheme()`/`Appearance` for the system scheme; `Appearance.setColorScheme()` (no `null` since 0.82 — use `'unspecified'`) for in-app override; avoid flashes by reading the scheme before first render; provide dark variants of images/icons; check contrast in both themes.
-- **Tokens and theme context:** colours, spacing, radius, typography, elevation, motion defined once; semantic tokens (`textPrimary`, `surface`) map to light/dark/high-contrast values; memoise the theme value ([10 §3.2](10-app-architecture-state-and-navigation.md#32-context)).
+- **Tokens and theme context:** colors, spacing, radius, typography, elevation, motion defined once; semantic tokens (`textPrimary`, `surface`) map to light/dark/high-contrast values; memoize the theme value ([10 §3.2](10-app-architecture-state-and-navigation.md#32-context)).
 - **Design-system practice** *(hedged)*: primitive components (`Box`, `Text`, `Pressable` wrappers) with variants, a11y defaults baked in, documented in Storybook for RN or a playground app, visual/interaction tests ([testing/05](../testing/05-visual-accessibility-and-component-states-testing.md), [testing/08 §6](../testing/08-testing-in-practice-tdd-architecture-mobile-and-ai.md#6-testing-react-native-apps)); share tokens with web in a monorepo.
-- **Platform theming:** respect system accent/dynamic colour on Android (Material You *(hedged)*) and iOS materials; **Liquid Glass** support exists on iOS 26+/27 builds (e.g. `expo-glass-effect`; reports availability when built with the iOS 27 SDK) *(use only on supported OS versions with fallbacks)*.
-- **Status bar and system UI** follow the theme; edge-to-edge changes how you colour system bars.
+- **Platform theming:** respect system accent/dynamic color on Android (Material You *(hedged)*) and iOS materials; **Liquid Glass** support exists on iOS 26+/27 builds (e.g. `expo-glass-effect`; reports availability when built with the iOS 27 SDK) *(use only on supported OS versions with fallbacks)*.
+- **Status bar and system UI** follow the theme; edge-to-edge changes how you color system bars.
 
 ---
 
 ## 5. Text, Fonts, Images and Keyboard Handling
 
 - **Text:** all text in `<Text>`; `numberOfLines`/`ellipsizeMode`; nested `Text` inheritance; avoid fixed-height containers for text (font scaling and translations expand strings).
-- **Font scaling (Dynamic Type / system font size):** honour it (`allowFontScaling` default on) and cap where layouts break using `maxFontSizeMultiplier` *(hedged)*; test at the largest accessibility sizes; never disable scaling globally.
+- **Font scaling (Dynamic Type / system font size):** honor it (`allowFontScaling` default on) and cap where layouts break using `maxFontSizeMultiplier` *(hedged)*; test at the largest accessibility sizes; never disable scaling globally.
 - **Fonts:** load custom fonts before first paint without blocking (splash); **variable fonts** supported via `fontVariationSettings` (0.88) and `expo-font` (SDK 58); subset fonts to limit size ([06](06-startup-bundle-animations-and-gestures.md#3-bundle-and-app-size)).
 - **Images:** specify dimensions for network images; `resizeMode` (`cover`, `contain`…); `ImageBackground` is **deprecated (0.87)** — use a `View` with an absolutely positioned `Image`; caching/thumbnails/memory in [05](05-performance-rendering-lists-images-and-memory.md#7-image-optimization); use SVG for icons.
 - **Inputs:** `secureTextEntry`, `autoComplete`/`textContentType` for credentials/OTP autofill, `inputMode`/`keyboardType`, return-key handling and focus chaining, paste/clipboard handling for sensitive inputs ([11 §8](11-mobile-security.md#8-sensitive-data-in-logs-and-screens)).
@@ -105,7 +105,7 @@ flowchart TB
 | **Announcements and focus** | `AccessibilityInfo.announceForAccessibility`, `sendAccessibilityEvent` (replaces `setAccessibilityFocus`, deprecated 0.85) to move focus after navigation/errors; live regions (`accessibilityLiveRegion` on Android) *(hedged)* |
 | **Dynamic type / zoom** | Text scales with system settings; layouts must not clip; test largest sizes and Display Zoom/Android font scale |
 | **Reduce motion / transparency** | `AccessibilityInfo.isReduceMotionEnabled` and change listeners; replace parallax/auto-play with fades/static; respect reduced transparency |
-| **Contrast and colour** | WCAG-level contrast in all themes; don't convey information by colour alone; bold-text and high-contrast settings |
+| **Contrast and color** | WCAG-level contrast in all themes; don't convey information by color alone; bold-text and high-contrast settings |
 | **Screen-reader testing** | **VoiceOver (iOS)** and **TalkBack (Android)** on real devices; Switch/voice control; keyboard (external) navigation on tablets; Accessibility Inspector / Accessibility Scanner *(hedged)* |
 | **Automated checks** | RNTL role/label queries and `toHaveAccessibleName`-style assertions in component tests; lint rules for missing labels *(hedged)*; E2E checks with Detox/Maestro by accessibility label ([testing/08](../testing/08-testing-in-practice-tdd-architecture-mobile-and-ai.md#6-testing-react-native-apps)) |
 
@@ -115,14 +115,14 @@ flowchart TB
 
 ---
 
-## 7. Internationalisation and Localisation
+## 7. Internationalization and Localization
 
-- **Strings:** externalise all user-facing text (i18next/FormatJS/Lingui-style libraries *(hedged)*); avoid string concatenation; use ICU-style plurals and gender where needed; pass context to translators; pseudo-localise to catch truncation and hard-coded text.
+- **Strings:** externalize all user-facing text (i18next/FormatJS/Lingui-style libraries *(hedged)*); avoid string concatenation; use ICU-style plurals and gender where needed; pass context to translators; pseudo-localize to catch truncation and hard-coded text.
 - **Locale detection:** `expo-localization` (device locales, calendar, timezone, RTL flag) *(hedged)*; allow in-app language override; persist the choice; handle locale changes at runtime.
 - **Formatting:** dates, numbers, currencies, units via **`Intl`** where Hermes supports the APIs you need, or a library/polyfill *(hedged — check the supported `Intl` features in your engine version)*; always format money with currency and locale rules; handle time zones explicitly (store UTC, display local).
 - **RTL:** use **logical style properties** (`marginStart/End`, `paddingStart/End`, `start/end` positions) instead of left/right; mirror directional icons (back arrows, chevrons) but not logos/media controls; `I18nManager.forceRTL`/`allowRTL` changes usually need a restart; **since Expo SDK 58 on iOS, layout direction follows `I18nManager`** rather than being force-enabled from the device locale (`supportsRTL`) — test explicitly. Test text alignment and `TextInput` direction.
 - **Text expansion and scripts:** German/Finnish expansion, CJK line breaking, Arabic shaping, Thai/Devanagari font fallbacks; avoid fixed widths and truncated critical text.
-- **Content and compliance:** localised legal/disclosure text, number/date formats in statements, and regionally specific validation (phone, address, tax IDs).
+- **Content and compliance:** localized legal/disclosure text, number/date formats in statements, and regionally specific validation (phone, address, tax IDs).
 - **Testing:** snapshot or visual checks per locale/RTL, plural/ICU unit tests, and manual review for key flows ([testing/05](../testing/05-visual-accessibility-and-component-states-testing.md)).
 
 ---
@@ -132,7 +132,7 @@ flowchart TB
 - **Design languages:** iOS HIG (navigation bars, large titles, swipe-back, bottom sheets, SF Symbols) vs Android Material (top app bars, FABs, bottom navigation, back handling with predictive back *(hedged)*). Match conventions in navigation, controls and gestures; avoid pixel-identical cross-platform UIs that feel foreign.
 - **Native components for fidelity:** native stack/tabs (Expo Router **native tabs** stable in SDK 58), Expo UI (SwiftUI/Compose) for pickers, menus, sheets, lists (recycling lists in SDK 58); native controls give platform a11y, animations and OS-version styling (e.g. Liquid Glass) for free.
 - **Haptics, sounds, and system integration:** use sparingly and respect user settings; support widgets/Live Activities/App Intents only where they add value (Expo SDK 58 `expo-widgets` on Android, `expo-app-intents` alpha) *(hedged)*.
-- **Back behaviour and gestures:** Android system back/predictive back and iOS swipe-back must work with nested navigators and modals ([10](10-app-architecture-state-and-navigation.md#4-navigation)).
+- **Back behavior and gestures:** Android system back/predictive back and iOS swipe-back must work with nested navigators and modals ([10](10-app-architecture-state-and-navigation.md#4-navigation)).
 - **OS version adoption:** use `Platform.Version` checks and feature detection; provide fallbacks for newer visual APIs ([04 §9](04-native-modules-components-and-platform-code.md#9-platform-differences-and-platform-specific-code)).
 
 ---
@@ -160,7 +160,7 @@ flowchart TB
 - **What is Yoga?** Meta's Flexbox layout engine used by Fabric in C++.
 - **Why `useWindowDimensions` over `Dimensions.get`?** It re-renders on size changes (rotation, split-screen).
 - **How do you handle notches and system bars?** `react-native-safe-area-context` insets; edge-to-edge on Android 15+; core `SafeAreaView` is deprecated.
-- **How do you implement dark mode?** `useColorScheme` plus tokenised themes; contrast checks; override via `Appearance.setColorScheme` (`'unspecified'`).
+- **How do you implement dark mode?** `useColorScheme` plus tokenized themes; contrast checks; override via `Appearance.setColorScheme` (`'unspecified'`).
 - **What are key accessibility props?** `accessible`, role, label, hint, state, value (and `aria-*` equivalents); live regions and announcements.
 - **Minimum touch target?** ~44 pt (iOS) / 48 dp (Android); use `hitSlop`.
 - **How do you test accessibility?** RNTL role/label queries, VoiceOver/TalkBack on devices, accessibility inspectors/scanners.
@@ -177,16 +177,16 @@ flowchart TB
 Token-based design system with semantic themes; width-class breakpoints and hinge/window-size awareness; safe areas/edge-to-edge handled in one layout shell; native navigation; accessibility defaults baked into primitives; i18n/RTL from day one; visual and a11y tests per theme/locale; performance budgets for list rows; platform-specific polish via native components where valuable.
 
 ### S2. "The app breaks at 200% font size and in German."
-Remove fixed heights/widths, use flexible containers, `numberOfLines` only where truncation is acceptable, set `maxFontSizeMultiplier` selectively, test pseudo-localised strings and accessibility sizes in CI screenshots, and review wrapping of critical content (balances, buttons).
+Remove fixed heights/widths, use flexible containers, `numberOfLines` only where truncation is acceptable, set `maxFontSizeMultiplier` selectively, test pseudo-localized strings and accessibility sizes in CI screenshots, and review wrapping of critical content (balances, buttons).
 
 ### S3. "VoiceOver reads our custom dropdown as unlabeled text."
 Add role/state semantics (`button`, `expanded`), labels/hints, modal focus management for the list, announcements on selection, and prefer a native picker/menu (Expo UI) when feasible; test with VoiceOver/TalkBack and add RNTL assertions.
 
 ### S4. "After iOS 27 support, layouts break in split-screen and rotation."
-Apps are resizable: remove orientation locks and reliance on `requireFullScreen`, use `useWindowDimensions`/container queries, re-check safe areas, test the scene lifecycle, and use `expo-hinge`/`ArrangementView` only for foldable-specific behaviour ([08](08-app-lifecycle-background-work-push-and-deep-links.md)).
+Apps are resizable: remove orientation locks and reliance on `requireFullScreen`, use `useWindowDimensions`/container queries, re-check safe areas, test the scene lifecycle, and use `expo-hinge`/`ArrangementView` only for foldable-specific behavior ([08](08-app-lifecycle-background-work-push-and-deep-links.md)).
 
 ### S5. "Arabic customers report mirrored charts and misaligned currency."
-Charts/numerals shouldn't blindly mirror; use logical properties for layout, explicit direction for chart components, locale-aware number/currency formatting (including digit shaping), and mirror only directional UI icons; verify `I18nManager` behaviour after the SDK 58 iOS change.
+Charts/numerals shouldn't blindly mirror; use logical properties for layout, explicit direction for chart components, locale-aware number/currency formatting (including digit shaping), and mirror only directional UI icons; verify `I18nManager` behavior after the SDK 58 iOS change.
 
 ### S6. "Marketing wants a glass/blur effect everywhere."
 Gate by OS capability (Liquid Glass availability on iOS 26+/27 builds; fallback blur or solid surfaces elsewhere), test performance on low-end Android, keep text contrast above thresholds over dynamic backgrounds, provide reduce-transparency fallbacks, and limit use to a few surfaces.
@@ -200,10 +200,10 @@ Gate by OS capability (Liquid Glass availability on iOS 26+/27 builds; fallback 
 | Layout | Flexbox column default; no fixed heights for text |
 | Responsive | `useWindowDimensions`, width classes, resizable windows |
 | Safe areas | `react-native-safe-area-context`; edge-to-edge aware |
-| Theme | Semantic tokens; `useColorScheme`; memoised context |
+| Theme | Semantic tokens; `useColorScheme`; memoized context |
 | A11y | Role/label/state, targets ≥44/48, focus management, VoiceOver/TalkBack |
 | Fonts | Respect scaling; variable fonts (0.88) |
-| i18n | Externalise, ICU plurals, logical props, Intl |
+| i18n | Externalize, ICU plurals, logical props, Intl |
 | RTL | `start/end`, mirror directional icons only |
 | Removed | `absoluteFillObject`, `Modal animated`, `StatusBar` bg props, `Touchable*` |
 
