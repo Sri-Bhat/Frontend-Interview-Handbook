@@ -1,6 +1,6 @@
 # Mobile Security for React Native Apps
 
-> Verification note: Guidance follows the official **React Native Security** guide (AsyncStorage is unencrypted; no built-in secure storage — use Keychain Services / Android Keystore via libraries such as `expo-secure-store` or `react-native-keychain`; OAuth2 + PKCE with `react-native-app-auth`; deep-link hijacking risk and Universal/App Links; certificate pinning; keep secrets off the client and use an orchestration layer; do not forward tokens/PII to monitoring services) and the OAuth guidance verified earlier in this handbook (**RFC 10017 / BCP 212 "OAuth 2.0 for Browser-Based Applications"**, **RFC 9700 / BCP 240**: authorization code + PKCE, no implicit grant, refresh-token rotation or sender-constraining, strict redirect-URI matching) — see [web-security/05](../web-security/05-authentication-and-authorization-in-the-frontend.md). Version-sensitive RN/Expo facts were verified in the **Expo SDK 58 changelog (Oct 2026)**: **R8 is enabled by default in release builds** (`android.enableMinifyInReleaseBuilds=true`; reflection-based libraries may need keep rules), `expo-secure-store` gained `requireConfirmation` on Android authenticated reads/writes, iOS 27 requires the scene lifecycle, and **`expo-notifications`** shows foreground notifications by default. **Platform behaviours (Android `FLAG_SECURE`, iOS screenshot notification, ATS), OWASP MASVS/MASTG mapping, Play Integrity / App Attest, root/jailbreak library behaviour, SQLCipher/MMKV encryption options and regulatory expectations are established practice not re-fetched in this session — marked *(hedged)* where specific; none of the client-side controls here replaces server-side enforcement.** Storage mechanics: [09 §6](09-networking-storage-and-offline.md#6-client-storage-choices); token refresh mechanics: [09 §5](09-networking-storage-and-offline.md#5-the-api-layer-in-a-production-app).
+> Verification note: Guidance follows the official **React Native Security** guide (AsyncStorage is unencrypted; no built-in secure storage — use Keychain Services / Android Keystore via libraries such as `expo-secure-store` or `react-native-keychain`; OAuth2 + PKCE with `react-native-app-auth`; deep-link hijacking risk and Universal/App Links; certificate pinning; keep secrets off the client and use an orchestration layer; do not forward tokens/PII to monitoring services) and the OAuth guidance verified earlier in this handbook (**RFC 10017 / BCP 212 "OAuth 2.0 for Browser-Based Applications"**, **RFC 9700 / BCP 240**: authorization code + PKCE, no implicit grant, refresh-token rotation or sender-constraining, strict redirect-URI matching) — see [web-security/05](../web-security/05-authentication-and-authorization-in-the-frontend.md). Version-sensitive RN/Expo facts were verified in the **Expo SDK 58 changelog (Oct 2026)**: **R8 is enabled by default in release builds** (`android.enableMinifyInReleaseBuilds=true`; reflection-based libraries may need keep rules), `expo-secure-store` gained `requireConfirmation` on Android authenticated reads/writes, iOS 27 requires the scene lifecycle, and **`expo-notifications`** shows foreground notifications by default. **Platform behaviors (Android `FLAG_SECURE`, iOS screenshot notification, ATS), OWASP MASVS/MASTG mapping, Play Integrity / App Attest, root/jailbreak library behavior, SQLCipher/MMKV encryption options and regulatory expectations are established practice not re-fetched in this session — marked *(hedged)* where specific; none of the client-side controls here replaces server-side enforcement.** Storage mechanics: [09 §6](09-networking-storage-and-offline.md#6-client-storage-choices); token refresh mechanics: [09 §5](09-networking-storage-and-offline.md#5-the-api-layer-in-a-production-app).
 
 ## Table of Contents
 
@@ -59,7 +59,7 @@ flowchart TB
 
 ## 3. Authentication: OAuth2, OIDC, PKCE, Tokens and Sessions
 
-**OAuth2 vs OIDC:** OAuth2 is an **authorization** framework (delegated access) and is **not** an authentication protocol by itself; **OpenID Connect** adds standardised authentication — an **ID Token** (JWT with identity claims), `/userinfo`, and `openid profile email` scopes.
+**OAuth2 vs OIDC:** OAuth2 is an **authorization** framework (delegated access) and is **not** an authentication protocol by itself; **OpenID Connect** adds standardized authentication — an **ID Token** (JWT with identity claims), `/userinfo`, and `openid profile email` scopes.
 
 **Why mobile needs PKCE:** native apps have no central registry of URL schemes, so the redirect step is less trustworthy than on the web. **PKCE** binds the authorization code to a secret that never leaves the legitimate app:
 ```mermaid
@@ -78,7 +78,7 @@ sequenceDiagram
 - **Tokens:** access token — short-lived (minutes), sent as `Bearer`; refresh token — longer-lived, stored in secure storage, **rotated on every use** with **reuse detection** (replay of a used token → revoke the whole family); consider sender-constraining (DPoP) where supported *(hedged)*.
 - **Session expiry:** **idle timeout** (N minutes inactive) and/or **absolute timeout** (N hours regardless); server-authoritative; clear tokens/caches on logout and revoke refresh tokens server-side.
 - **Step-up authentication:** re-prompt (biometrics/password/OTP) before high-risk actions even if the session is valid; bind approval to the transaction details (what-you-see-is-what-you-sign).
-- **Biometrics:** Face ID/Touch ID/`BiometricPrompt` rarely **is** the credential — it **unlocks a secret** protected by Keychain access control (`biometryCurrentSet`-style *(hedged)*) or Keystore `setUserAuthenticationRequired`; libraries: `react-native-biometrics`, `expo-local-authentication`, biometric-gated `react-native-keychain`. Decide behaviour when biometrics change (invalidate keys). Expo SDK 58 `expo-secure-store` adds `requireConfirmation` for Android authenticated reads/writes.
+- **Biometrics:** Face ID/Touch ID/`BiometricPrompt` rarely **is** the credential — it **unlocks a secret** protected by Keychain access control (`biometryCurrentSet`-style *(hedged)*) or Keystore `setUserAuthenticationRequired`; libraries: `react-native-biometrics`, `expo-local-authentication`, biometric-gated `react-native-keychain`. Decide behavior when biometrics change (invalidate keys). Expo SDK 58 `expo-secure-store` adds `requireConfirmation` for Android authenticated reads/writes.
 - **Passkeys/WebAuthn** *(hedged)*: phishing-resistant primary authentication where the backend supports it; fall back safely.
 - **BFF for mobile?** Native apps are public clients (no secret); a token-mediating backend or BFF can keep refresh tokens server-side and reduce client token exposure — see the OAuth browser-app guidance for the trade-offs ([web-security/05](../web-security/05-authentication-and-authorization-in-the-frontend.md)).
 
@@ -106,13 +106,13 @@ sequenceDiagram
 - **Problem:** HTTPS trusts **any** certificate from a CA in the device's trust store; a malicious root CA (social engineering, MDM abuse) enables MITM. **Pinning** embeds the expected certificate/public key in the app so only that identity is accepted.
 - **Implementation is native:** Android OkHttp `CertificatePinner`/`TrustManager`; iOS `URLSession` delegate or TrustKit, with RN's `RCTSetCustomNSURLSessionConfigurationProvider` hook; commonly via a community native module ([09 §4](09-networking-storage-and-offline.md#4-where-certificate-pinning-lives)).
 - **Operational cost:** certificates expire/rotate — a pinned app with a rotated server cert **stops working until updated**. Mitigate: pin the **intermediate/CA or public key** (not just the leaf), include **backup pins**, ship updates before expiry, monitor pin failures, and keep an audited emergency path *(hedged)*.
-- **Trade-offs:** pinning complicates debugging (proxies like Charles/Proxyman fail) and corporate TLS inspection; it adds strong protection for high-value apps but isn't a substitute for server-side authorisation.
+- **Trade-offs:** pinning complicates debugging (proxies like Charles/Proxyman fail) and corporate TLS inspection; it adds strong protection for high-value apps but isn't a substitute for server-side authorization.
 
 ---
 
 ## 6. Deep-Link Security
 
-- **Why it's special:** mobile has **no centralised URL-scheme registry**; any app can register your scheme and may intercept links (Android shows a disambiguation dialog; iOS historically resolved silently).
+- **Why it's special:** mobile has **no centralized URL-scheme registry**; any app can register your scheme and may intercept links (Android shows a disambiguation dialog; iOS historically resolved silently).
 - **Rules:** never put tokens, account numbers or secrets in links; prefer **Universal Links (iOS)** and **verified App Links (Android)** bound to a domain you control via hosted association files; **validate host, path and every parameter** (allow-list routes; type-check params); treat link input as untrusted user input (no direct navigation to sensitive screens without re-auth); beware open-redirect style parameters and link-driven WebView loads.
 - **OAuth connection:** because custom-scheme redirects are interceptable, **PKCE** is required for the code exchange ([§3](#3-authentication-oauth2-oidc-pkce-tokens-and-sessions)).
 - **Deferred deep links** (attribution providers) carry the same validation requirements.
@@ -150,13 +150,13 @@ sequenceDiagram
 - **In transit:** TLS/HTTPS baseline; pinning for high-value apps ([§5](#5-certificate-pinning)).
 - **At rest:** Keychain/Keystore items are OS-encrypted. For larger local data (cached transactions, notes) use an **encrypting storage engine** (SQLCipher for SQLite, MMKV encryption) with the key in secure hardware-backed storage *(hedged)*.
 - **Principles:** use platform/audited primitives (WebCrypto-like libraries, native crypto), **never hand-roll crypto**; no hardcoded keys; use authenticated encryption (AES-GCM) and unique IVs *(hedged)*; rotate and version keys; handle key invalidation gracefully.
-- **Field-level encryption** or tokenisation for highly sensitive fields where the backend supports it.
+- **Field-level encryption** or tokenization for highly sensitive fields where the backend supports it.
 
 ---
 
 ## 10. Secure API Communication
 
-Consolidated rules: always HTTPS; consider pinning; short-lived access tokens (never long-lived API keys); no secrets in URLs or query strings (logs/referrers); **validate and authorise on the server regardless of client checks**; replay protection and idempotency for writes ([09 §5](09-networking-storage-and-offline.md#5-the-api-layer-in-a-production-app)); rate limiting and anomaly detection server-side; reject unsupported/old app versions via a minimum-version endpoint; send an app/build attestation signal *(hedged)*; keep the refresh flow free of race conditions and logging.
+Consolidated rules: always HTTPS; consider pinning; short-lived access tokens (never long-lived API keys); no secrets in URLs or query strings (logs/referrers); **validate and authorize on the server regardless of client checks**; replay protection and idempotency for writes ([09 §5](09-networking-storage-and-offline.md#5-the-api-layer-in-a-production-app)); rate limiting and anomaly detection server-side; reject unsupported/old app versions via a minimum-version endpoint; send an app/build attestation signal *(hedged)*; keep the refresh flow free of race conditions and logging.
 
 ---
 
@@ -164,7 +164,7 @@ Consolidated rules: always HTTPS; consider pinning; short-lived access tokens (n
 
 - **Foundational fact: anything inside the app bundle is effectively public** (binaries can be decompiled; obfuscation only raises cost).
 - **Config ≠ secrets:** `react-native-config`, `react-native-dotenv`, Expo `EXPO_PUBLIC_*` variables are for **environment configuration** (API base URLs, public client IDs) — values are **inlined into the bundle** (Expo's Metro config now records inlined `EXPO_PUBLIC_*` values in the transform cache so changes invalidate it).
-- **Real secrets** (third-party API keys with privileges, signing keys): keep **server-side**; the app talks to your backend/**BFF** or a serverless **orchestration layer** that holds the secret and forwards authorised requests.
+- **Real secrets** (third-party API keys with privileges, signing keys): keep **server-side**; the app talks to your backend/**BFF** or a serverless **orchestration layer** that holds the secret and forwards authorized requests.
 - **CI/CD-time secrets:** the CI platform's encrypted secret store (GitHub Actions secrets/environments, EAS secrets/environment variables), a secrets manager, short-lived credentials via OIDC where available, **Fastlane `match`**-style encrypted repositories for signing assets; never commit `.env` files with real secrets ([14](14-ci-cd-with-github-actions.md)).
 - **Detect leaks:** secret scanning/push protection, rotation procedures, per-environment keys, scoped keys with referrer/package restrictions (e.g., maps keys restricted to bundle ID) *(hedged)*.
 
@@ -172,7 +172,7 @@ Consolidated rules: always HTTPS; consider pinning; short-lived access tokens (n
 
 ## 12. Build, Dependency and Release Security
 
-- **Dependencies:** lockfiles, audit/Dependabot-style updates, review native SDKs and permissions they add, prefer maintained libraries, pin versions, minimise analytics/SDK count; supply-chain practices in [web-security/07](../web-security/07-supply-chain-and-third-party-script-security.md).
+- **Dependencies:** lockfiles, audit/Dependabot-style updates, review native SDKs and permissions they add, prefer maintained libraries, pin versions, minimize analytics/SDK count; supply-chain practices in [web-security/07](../web-security/07-supply-chain-and-third-party-script-security.md).
 - **OTA updates:** signed updates with **code signing** enabled where supported, channel/runtime-version discipline so malicious/incompatible bundles can't be delivered, staged rollouts and rollback ([13](13-ota-updates-and-store-releases.md)).
 - **Release builds:** R8/ProGuard on, debug features off, `android:allowBackup` and `exported` components reviewed *(hedged)*, minimal permissions, Info.plist usage strings accurate, ATS exceptions minimal.
 - **Signing assets:** upload keys/certificates/provisioning profiles in encrypted secret stores with limited access; audit who can release.
@@ -185,7 +185,7 @@ Consolidated rules: always HTTPS; consider pinning; short-lived access tokens (n
 1. Tokens/PII in AsyncStorage or persisted whole-store blobs.
 2. Embedded webviews or implicit flow for login; missing PKCE; loose redirect URI matching.
 3. Treating biometrics as the credential instead of unlocking a protected secret.
-4. Client-only authorisation; trusting route guards or root checks.
+4. Client-only authorization; trusting route guards or root checks.
 5. Secrets (API keys) in the bundle or `EXPO_PUBLIC_*` variables.
 6. Sensitive data in deep links, logs, crash breadcrumbs or push payloads.
 7. Pinning the leaf certificate without backup pins/rotation plan.
@@ -224,7 +224,7 @@ System-browser OAuth2 code + PKCE with OIDC; short-lived access tokens, rotated 
 Move tokens to secure storage with appropriate accessibility attributes (device-only, not migrating to backups/new devices), exclude sensitive files from backups, shorten token lifetimes, add rotation with reuse detection, re-authenticate on new device, and verify on a rooted device.
 
 ### S3. "Marketing wants analytics/session replay; compliance objects."
-Minimise data: allow-list events, redact fields and screens, disable replay on sensitive views, mask keystrokes, use consent flows, review SDK network destinations and retention, and gate via feature flags; run a privacy review and test redaction in release builds.
+Minimize data: allow-list events, redact fields and screens, disable replay on sensitive views, mask keystrokes, use consent flows, review SDK network destinations and retention, and gate via feature flags; run a privacy review and test redaction in release builds.
 
 ### S4. "Pinning caused an outage after a certificate rotation."
 Postmortem: leaf pin without backup. Pin intermediate/public key + backup, pre-announce rotations, add expiry monitoring and staged releases, maintain an audited remote disable path, and test rotation in staging before production.
@@ -257,7 +257,7 @@ Android: `FLAG_SECURE` on statement screens; iOS: detect capture events, blur on
 ```mermaid
 flowchart TD
   A["New feature touching sensitive data"] --> B{"Where does the secret or data live?"}
-  B -->|"Server"| C["Fetch minimal data, authorise per request, short TTL caches"]
+  B -->|"Server"| C["Fetch minimal data, authorize per request, short TTL caches"]
   B -->|"Must be on device"| D["Keychain or Keystore, encrypted DB, clear on logout"]
   C --> E{"High-risk action?"}
   D --> E
