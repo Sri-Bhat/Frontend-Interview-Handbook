@@ -31,23 +31,6 @@ Production-oriented React Native interview preparation for Senior Frontend, Mobi
 4. **[12 Expo and tooling](12-expo-eas-tooling-and-debugging.md)** → **[13 Releases](13-ota-updates-and-store-releases.md)** → **[14 CI/CD](14-ci-cd-with-github-actions.md)**.
 5. **[15 Senior scenarios](15-senior-scenarios-and-system-design.md)**, then **[16 Recall map](16-react-native-recall-map.md)** the day before and the hour before.
 
-## What Moved Where (from the previous 17-file layout)
-
-| Previous files | Now owned by |
-|---|---|
-| Architecture & Internals; Tier 2 (old vs new) | 02 (Hermes → 01, Fiber/effects → 03) |
-| Tier 1 (JS/RN/native), Tier 5 (JS internals) | 01 |
-| Tier 6 (React internals) | 03 |
-| Native Integration; Tier 3 (native ↔ JS) | 04 |
-| Performance; Tier 4 (performance internals) | 05 (bundle/startup/animations → 06) |
-| Tier 7 (scenarios), Tier 9 (lifecycle) | 08 (Metro → 06) |
-| Tier 8 (networking internals); networking and offline parts of App Architecture | 09 |
-| App Architecture (structure, state, navigation, errors, testing) | 10 (security → 11, CI/CD → 13/14) |
-| Tier 10 (OTA), Tier 11 (store releases) | 13 |
-| Tier 12 (GitHub Actions) | 14 |
-| Master recall map | 16 |
-| New topics | 07 (UI/a11y/i18n), 12 (Expo/EAS/tooling), 15 (scenarios), plus Hermes V1, New-Architecture-only migration, Animation Backend, Expo Modules, iOS 27 scene lifecycle, edge-to-edge |
-
 ## Related Material
 
 - React fundamentals and hooks behind RN rendering: [react/](../react/README.md); typed APIs and Strict TypeScript migration: [typescript/](../typescript/README.md)
