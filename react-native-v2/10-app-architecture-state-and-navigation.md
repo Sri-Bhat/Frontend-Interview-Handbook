@@ -1,6 +1,6 @@
 # App Architecture, State Management and Navigation
 
-> Verification note: Library behaviour follows the official docs of **React (Context, Error Boundaries)**, **Redux Toolkit**, **Zustand**, **TanStack Query** (defaults: `staleTime` 0, `gcTime` 5 minutes, 3 retries with exponential backoff), **React Navigation** (conditional screens for auth flows, state persistence, linking) and the **React Native Testing/Security guides** as they were verified for this handbook. Version-sensitive facts were verified against **reactnative.dev release posts (0.80 → 0.88)** and the **Expo SDK 58 changelog (Oct 2026)**: **uncaught promise rejections are reported through the uncaught-error path since 0.82**; **Expo Router 58** stabilised data loaders, server rendering, middleware, native tabs and toolbars, reworked its navigation core (deterministic state; fewer forked React Navigation APIs; `withLayoutContext` deprecated in favour of `integrateWithRouter`), added **React transitions**, `Activity`-based screen hiding (`activityEnabled`) and **screen error boundaries**, and defaults web output to `server`; **Expo Observe** (GA Aug 2026) records startup/navigation performance, JS errors and native crashes; `react-native-safe-area-context` is the replacement for the deprecated core `SafeAreaView` (0.81). **Feature-folder conventions, MMKV/persistence choices, feature-flag vendors, dependency-injection patterns, monorepo tooling and crash-reporting vendors are established practice not re-fetched in this session — marked *(hedged)* where specific.** Related: [09 Networking and offline](09-networking-storage-and-offline.md), [11 Security](11-mobile-security.md), [testing/08 §6](../testing/08-testing-in-practice-tdd-architecture-mobile-and-ai.md#6-testing-react-native-apps) (RN testing practice).
+> Verification note: Library behavior follows the official docs of **React (Context, Error Boundaries)**, **Redux Toolkit**, **Zustand**, **TanStack Query** (defaults: `staleTime` 0, `gcTime` 5 minutes, 3 retries with exponential backoff), **React Navigation** (conditional screens for auth flows, state persistence, linking) and the **React Native Testing/Security guides** as they were verified for this handbook. Version-sensitive facts were verified against **reactnative.dev release posts (0.80 → 0.88)** and the **Expo SDK 58 changelog (Oct 2026)**: **uncaught promise rejections are reported through the uncaught-error path since 0.82**; **Expo Router 58** stabilized data loaders, server rendering, middleware, native tabs and toolbars, reworked its navigation core (deterministic state; fewer forked React Navigation APIs; `withLayoutContext` deprecated in favor of `integrateWithRouter`), added **React transitions**, `Activity`-based screen hiding (`activityEnabled`) and **screen error boundaries**, and defaults web output to `server`; **Expo Observe** (GA Aug 2026) records startup/navigation performance, JS errors and native crashes; `react-native-safe-area-context` is the replacement for the deprecated core `SafeAreaView` (0.81). **Feature-folder conventions, MMKV/persistence choices, feature-flag vendors, dependency-injection patterns, monorepo tooling and crash-reporting vendors are established practice not re-fetched in this session — marked *(hedged)* where specific.** Related: [09 Networking and offline](09-networking-storage-and-offline.md), [11 Security](11-mobile-security.md), [testing/08 §6](../testing/08-testing-in-practice-tdd-architecture-mobile-and-ai.md#6-testing-react-native-apps) (RN testing practice).
 
 ## Table of Contents
 
@@ -24,11 +24,11 @@
 
 ## 1. Quick Summary (TL;DR)
 
-- **Organise by feature (vertical slices)**, not by file type; keep shared folders genuinely cross-feature. Root shell in `app/`, features under `features/*`, infrastructure clients in `services/`.
-- **"State" is four things:** **local** (`useState`), **global client** (Context / Redux Toolkit / Zustand), **server** (TanStack Query / RTK Query), **persistent** (a behaviour layered on the others; secrets go to Keychain/Keystore, not a persisted store).
-- **Don't put everything in Redux:** server state needs caching/staleness tooling, local UI state belongs in components, and over-centralisation hurts performance and ownership.
-- **Navigation:** compose stacks/tabs; gate auth by **conditionally including screens** (not `if`s sprinkled in screens) so back can't return to auth; persist navigation state with serialisable params and an error boundary that clears it.
-- **Errors are four different things:** UI (error boundary), API (normalised in the API layer), unexpected crashes (crash reporting), business (explicit domain handling).
+- **Organize by feature (vertical slices)**, not by file type; keep shared folders genuinely cross-feature. Root shell in `app/`, features under `features/*`, infrastructure clients in `services/`.
+- **"State" is four things:** **local** (`useState`), **global client** (Context / Redux Toolkit / Zustand), **server** (TanStack Query / RTK Query), **persistent** (a behavior layered on the others; secrets go to Keychain/Keystore, not a persisted store).
+- **Don't put everything in Redux:** server state needs caching/staleness tooling, local UI state belongs in components, and over-centralization hurts performance and ownership.
+- **Navigation:** compose stacks/tabs; gate auth by **conditionally including screens** (not `if`s sprinkled in screens) so back can't return to auth; persist navigation state with serializable params and an error boundary that clears it.
+- **Errors are four different things:** UI (error boundary), API (normalized in the API layer), unexpected crashes (crash reporting), business (explicit domain handling).
 - **Test by layer:** static → unit → component (user-centric) → a few E2E journeys on device ([testing/08](../testing/08-testing-in-practice-tdd-architecture-mobile-and-ai.md#6-testing-react-native-apps)).
 - Wealth-management/fintech context: treat security, correctness over optimism (no optimistic money movement), auditability and graceful degradation as architecture-level requirements ([11](11-mobile-security.md), [09](09-networking-storage-and-offline.md)).
 
@@ -93,10 +93,10 @@ flowchart TB
 | **Persistent** | Last screen, cached snapshot, tokens | Persistence layer on top of the above; **secrets → Keychain/Keystore** ([11](11-mobile-security.md)) |
 
 ### 3.2 Context
-Makes a value available to the whole subtree without prop drilling. Official guidance: **try props, then JSX `children`, before context.** Limitation: every consumer re-renders when the provider **value** changes, and a fresh object literal re-renders **all** consumers on every provider render — memoise the value or split contexts ([05](05-performance-rendering-lists-images-and-memory.md#4-preventing-unnecessary-re-renders)). No selectors, devtools or middleware.
+Makes a value available to the whole subtree without prop drilling. Official guidance: **try props, then JSX `children`, before context.** Limitation: every consumer re-renders when the provider **value** changes, and a fresh object literal re-renders **all** consumers on every provider render — memoize the value or split contexts ([05](05-performance-rendering-lists-images-and-memory.md#4-preventing-unnecessary-re-renders)). No selectors, devtools or middleware.
 
 ### 3.3 Redux Toolkit (RTK)
-The standard way to write Redux: `configureStore` (combined reducers, thunk, DevTools), `createSlice` (reducer + actions; Immer allows mutative-looking code), `createAsyncThunk` (pending/fulfilled/rejected), `createEntityAdapter` (normalised collections), `createSelector` (memoised selectors via Reselect), **RTK Query** (`createApi` + `fetchBaseQuery`: generated hooks, caching, invalidation). Best for large teams, strict conventions, time-travel debugging and complex derived state.
+The standard way to write Redux: `configureStore` (combined reducers, thunk, DevTools), `createSlice` (reducer + actions; Immer allows mutative-looking code), `createAsyncThunk` (pending/fulfilled/rejected), `createEntityAdapter` (normalized collections), `createSelector` (memoized selectors via Reselect), **RTK Query** (`createApi` + `fetchBaseQuery`: generated hooks, caching, invalidation). Best for large teams, strict conventions, time-travel debugging and complex derived state.
 
 ### 3.4 Zustand
 ```ts
@@ -126,7 +126,7 @@ Defaults worth knowing: **`staleTime` 0** (stale immediately but still served fr
 ### 3.7 "Why shouldn't we put everything in Redux?"
 1. **Server state isn't yours** — hand-built loading/error/data reducers reinvent (worse) what Query/RTK Query give free.
 2. **Not all state is global** — a text field belongs in `useState`.
-3. **Over-centralisation hurts performance and maintainability** — imprecise selectors, a god object across teams.
+3. **Over-centralization hurts performance and maintainability** — imprecise selectors, a god object across teams.
 4. **Not everything needs sharing** — feature-scoped state keeps features independent and deletable.
 5. **Different lifecycles** — auth until logout, server cache with refetching, UI state reset on unmount.
 > *Use the right tool per kind of state; keep the global store for the genuinely cross-cutting slice (auth session, theme, flags).*
@@ -157,7 +157,7 @@ flowchart TB
   C --> C1["Profile stack: overview, settings"]
 ```
 - **React Navigation vs Expo Router:** React Navigation (imperative/typed config; static API with `screens` objects) vs **Expo Router** (file-based routing on top of React Navigation concepts; **SDK 58**: data loaders, SSR, middleware, **native tabs** and toolbars stable; transitions and `Activity`-based hiding; screen-level error boundaries; the router now has its own navigation core). Choose Expo Router for new Expo apps wanting file-based routing, web parity and typed routes; React Navigation for existing/bare apps or fully custom navigators *(verify both against your SDK)*.
-- **Native-feel navigation:** native stacks and native tabs (UIKit/Material) reduce JS cost and match platform behaviour; keep screen components light and avoid heavy work in screen mount.
+- **Native-feel navigation:** native stacks and native tabs (UIKit/Material) reduce JS cost and match platform behavior; keep screen components light and avoid heavy work in screen mount.
 - **Safe areas:** use `react-native-safe-area-context`; the core `SafeAreaView` is deprecated (0.81); more places need insets on newer devices (iPhone Duo, edge-to-edge Android 15+ — [07](07-ui-styling-layout-accessibility-and-localization.md)).
 
 ---
@@ -179,7 +179,7 @@ const RootStack = createNativeStackNavigator({
 - When the condition flips, React Navigation removes non-matching screens and shows the matching one; **hardware back cannot return to the auth flow** because those screens no longer exist in the tree.
 - Add a **splash/loading screen before any navigator** while the stored token is restored from secure storage; a `useReducer` + context exposes `signIn/signOut/signUp`.
 - **Shared screens** reachable in both states (e.g. Help) need grouping and a changing `navigationKey` so they reset on auth change.
-- **Protected screens are not security**: client gating is UX; authorise every API call on the server ([11](11-mobile-security.md)). Add **step-up authentication** (biometrics/password) before high-risk actions and handle **session expiry** (idle and absolute timeouts) centrally.
+- **Protected screens are not security**: client gating is UX; authorize every API call on the server ([11](11-mobile-security.md)). Add **step-up authentication** (biometrics/password) before high-risk actions and handle **session expiry** (idle and absolute timeouts) centrally.
 
 ---
 
@@ -187,7 +187,7 @@ const RootStack = createNativeStackNavigator({
 
 - **Linking config:** URL `prefixes` (custom scheme and/or universal-link domain) plus a path→screen map; handles **cold start** (link becomes initial state) and **warm start** (link updates state). How the OS delivers links to the app: [08](08-app-lifecycle-background-work-push-and-deep-links.md); link security: [11](11-mobile-security.md).
 - **Deferred deep linking** (link context across install) requires an attribution provider — there is no built-in recovery.
-- **State persistence:** `onStateChange` writes navigation state (to storage); `initialState` restores it; render a loading view until restored. All route names/params must be **JSON-serialisable** (no functions/class instances/cycles). Always pair with an **error boundary that clears persisted state** so a screen that reliably throws can't trap users in a restart loop.
+- **State persistence:** `onStateChange` writes navigation state (to storage); `initialState` restores it; render a loading view until restored. All route names/params must be **JSON-serializable** (no functions/class instances/cycles). Always pair with an **error boundary that clears persisted state** so a screen that reliably throws can't trap users in a restart loop.
 - **Preserving screens:** hidden/inactive screens may stay mounted — clean up subscriptions on **blur**, not only unmount ([05](05-performance-rendering-lists-images-and-memory.md#8-memory-leaks)); `Activity`-style hiding preserves state while cleaning up effects *(per library support)*.
 
 ---
@@ -221,6 +221,20 @@ const RootStack = createNativeStackNavigator({
 - **Tooling note (0.85):** the Jest preset moved to **`@react-native/jest-preset`** (update `jest.config.js`).
 - AAA structure, independent tests, mocks only at boundaries.
 
+```tsx
+import { render, screen, userEvent } from '@testing-library/react-native';
+
+test('shows an error for an empty email', async () => {
+  const user = userEvent.setup();
+  render(<LoginForm onSubmit={jest.fn()} />);
+
+  await user.press(screen.getByRole('button', { name: 'Sign in' }));
+
+  expect(screen.getByText('Email is required')).toBeOnTheScreen();
+});
+```
+  Query by role, label or visible text, drive it like a user (`userEvent`), and assert on what the user sees (API names per current RNTL; check your installed version *(hedged)*).
+
 ---
 
 ## 9. Error Handling and Crash Reporting
@@ -228,7 +242,7 @@ const RootStack = createNativeStackNavigator({
 ```mermaid
 flowchart LR
   UI["UI error: render exception"] --> EB["Error boundary"]
-  API["API error: transport or HTTP"] --> AL["API layer normalisation"]
+  API["API error: transport or HTTP"] --> AL["API layer normalization"]
   CR["Unexpected crash: native crash, unhandled rejection"] --> CRR["Crash reporting"]
   BZ["Business error: valid domain outcome"] --> DH["Domain handling and specific UX"]
 ```
@@ -243,7 +257,7 @@ class ErrorBoundary extends React.Component<Props, { hasError: boolean }> {
   render() { return this.state.hasError ? this.props.fallback : this.props.children; }
 }
 ```
-- **API errors → API layer.** Normalise network failures, HTTP errors and parse errors into one shape (`{ code, message, status }`) so UI branches on a single contract ([09](09-networking-storage-and-offline.md)). Expected conditions; must never crash the app.
+- **API errors → API layer.** Normalize network failures, HTTP errors and parse errors into one shape (`{ code, message, status }`) so UI branches on a single contract ([09](09-networking-storage-and-offline.md)). Expected conditions; must never crash the app.
 - **Unexpected crashes → crash reporting.** Sentry, Firebase Crashlytics, Bugsnag, or **Expo Observe** (JS errors and **native crashes**, startup/navigation performance, release comparison) *(vendor choice hedged)*: symbolicated stacks (upload source maps in CI), breadcrumbs, release/version tagging, user/session context. **Since 0.82 uncaught promise rejections are reported** through the uncaught-error path — expect new reports after upgrading. Audit default breadcrumbs for **PII/token leakage** ([11](11-mobile-security.md#8-sensitive-data-in-logs-and-screens)). A global JS handler (`ErrorUtils.setGlobalHandler`) *(hedged)* can add policy for fatal errors.
 - **Business errors → explicit domain handling.** "Insufficient funds", "market closed", "exceeds daily limit", "additional verification required" are **valid outcomes**, not bugs: model them as typed results/error codes and explain the specific *why* — a generic toast hides actionable information in a financial product.
 - **Recovery UX:** retry buttons, offline banners, degraded modes, reset-to-safe-state, and a persisted-navigation reset after crashes ([§6](#6-navigation-state-deep-link-config-and-app-restart)).
@@ -253,11 +267,11 @@ class ErrorBoundary extends React.Component<Props, { hasError: boolean }> {
 ## 10. Pitfalls
 
 1. Everything in one global store; promoting local state too early; storing server data in Redux by hand.
-2. Un-memoised context values; subscribing to whole stores without selectors.
+2. Un-memoized context values; subscribing to whole stores without selectors.
 3. Persisting whole stores (including tokens/PII) to unencrypted storage.
 4. Auth checks scattered in screens; `navigate('Home')` after login leaving auth screens in history.
 5. Treating client-side route guards as security.
-6. Non-serialisable navigation params; persisted navigation state with no crash reset.
+6. Non-serializable navigation params; persisted navigation state with no crash reset.
 7. Error boundaries expected to catch event-handler/async errors; one global boundary around everything.
 8. Treating business outcomes as exceptions with generic messaging.
 9. Shared folders as a dumping ground; features importing each other's internals.
@@ -272,7 +286,7 @@ class ErrorBoundary extends React.Component<Props, { hasError: boolean }> {
 - **Why feature-first folders?** Co-located changes, ownership, easy extraction/deletion; needs discipline in shared folders.
 - **Four kinds of state?** Local, global client, server, persistent.
 - **Context vs Redux/Zustand?** Context re-renders all consumers on value change and lacks selectors/devtools; RTK/Zustand subscribe via selectors.
-- **Why not everything in Redux?** Server state concerns, local state, over-centralisation, scoping, differing lifecycles.
+- **Why not everything in Redux?** Server state concerns, local state, over-centralization, scoping, differing lifecycles.
 - **Server state vs client state?** Remote, async, shared ownership, can go stale — needs caching/refetch tooling.
 - **TanStack Query defaults?** `staleTime` 0, `gcTime` 5 min, 3 retries with exponential backoff, refetch on mount/focus/reconnect.
 - **What does RTK add?** Slices with Immer, store setup, thunks, entity adapters, selectors, RTK Query.
@@ -280,7 +294,7 @@ class ErrorBoundary extends React.Component<Props, { hasError: boolean }> {
 - **Why is persisting a whole store risky?** Unencrypted storage of sensitive data; allow-list and use secure storage for secrets.
 - **Stack vs tab vs nested navigators?** Push/pop flow vs parallel roots vs composition (tabs of stacks).
 - **How to implement auth flow?** Conditional screens from sign-in state; splash while restoring; back can't return to auth.
-- **How to restore navigation after restart?** `onStateChange` + `initialState`, serialisable params, error boundary clearing state.
+- **How to restore navigation after restart?** `onStateChange` + `initialState`, serializable params, error boundary clearing state.
 - **What do error boundaries not catch?** Event handlers, async code, SSR, errors in the boundary; no function-component version.
 - **API vs business error?** Transport failure vs valid domain outcome with specific UX.
 - **Why crash reporting beyond boundaries?** Native crashes and unhandled rejections never reach a boundary.
@@ -292,10 +306,10 @@ class ErrorBoundary extends React.Component<Props, { hasError: boolean }> {
 ## 12. Interview Questions — Senior Scenarios
 
 ### S1. "Design the architecture for a wealth-management app with portfolio, transactions, profile and auth."
-Feature slices; Expo/React Navigation with tabs of stacks and conditional auth screens; TanStack Query for server data with persisted cache for cold start; a tiny global store for session/theme/flags; typed API client with normalised errors ([09](09-networking-storage-and-offline.md)); Keychain/Keystore for tokens and biometric gating ([11](11-mobile-security.md)); pending states instead of optimistic money movement; observability with PII scrubbing; feature flags and staged rollouts ([13](13-ota-updates-and-store-releases.md)); tests per layer.
+Feature slices; Expo/React Navigation with tabs of stacks and conditional auth screens; TanStack Query for server data with persisted cache for cold start; a tiny global store for session/theme/flags; typed API client with normalized errors ([09](09-networking-storage-and-offline.md)); Keychain/Keystore for tokens and biometric gating ([11](11-mobile-security.md)); pending states instead of optimistic money movement; observability with PII scrubbing; feature flags and staged rollouts ([13](13-ota-updates-and-store-releases.md)); tests per layer.
 
 ### S2. "Redux store has 80 reducers and every screen is slow."
-Audit by kind: move server data to Query/RTK Query, move UI-local state to components, split into feature slices, add selectors/`createSelector`, normalise collections, remove derived state, check wide subscriptions with the Profiler, and consider Zustand for isolated stores ([05](05-performance-rendering-lists-images-and-memory.md)).
+Audit by kind: move server data to Query/RTK Query, move UI-local state to components, split into feature slices, add selectors/`createSelector`, normalize collections, remove derived state, check wide subscriptions with the Profiler, and consider Zustand for isolated stores ([05](05-performance-rendering-lists-images-and-memory.md)).
 
 ### S3. "A crash loop traps users after an update because navigation state is persisted."
 Persisted state referenced a removed route/param shape. Version the persisted state, validate before restore, catch restore errors, clear on boundary failure, and reduce persistence to production-safe cases (or disable it) with a remote kill switch.
@@ -319,7 +333,7 @@ Enforce module boundaries (lint rules, public APIs per feature), shared design s
 | State | Local first; server state in Query; global only for cross-cutting |
 | Persistence | Allow-list; secrets in secure storage |
 | Auth nav | Conditional screens, splash while restoring |
-| Restart | Serialisable params, versioned state, crash reset |
+| Restart | Serializable params, versioned state, crash reset |
 | Errors | Boundary / API layer / crash reporter / domain handling |
 | Money | Pending states, not optimism |
 | Testing | RNTL user-centric; few E2E |
