@@ -1,9 +1,3 @@
-React Native
-Performance
-CI/CD
-Native Integration
-App Architecture
-
 ---
 
 # Frontend Interview Handbook
