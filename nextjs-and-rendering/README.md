@@ -26,6 +26,7 @@ Production-oriented Next.js (App Router) and rendering-strategy interview prepar
 
 ## Related Material
 
+- Next.js and React debugging scenarios (hydration, caching, Server Actions): [debugging-scenarios/04](../debugging-scenarios/04-react-and-nextjs-debugging-scenarios.md)
 - Framework-agnostic web performance (metrics, loading, caching, INP, CLS, budgets): [web-performance/](../web-performance/README.md)
 - Browser internals (navigation, rendering pipeline, cookies/storage, security model): [browser-internals/](../browser-internals/README.md)
 - React internals: [react/](../react/README.md) (especially [Server Components](../react/05-server-components-and-server-functions.md) and [concurrent React](../react/03-concurrent-react-suspense-and-transitions.md))
@@ -33,6 +34,9 @@ Production-oriented Next.js (App Router) and rendering-strategy interview prepar
 - HTTP, Fetch, API design and resilience beneath Next.js data fetching: [networking-and-apis/](../networking-and-apis/README.md)
 - TypeScript for React/APIs: [typescript/](../typescript/README.md)
 - Architecture interviews: [system-design/](../system-design/README.md)
+- Testing Server Components, Server Actions and route handlers: [testing/03](../testing/03-component-testing-react.md), [testing/06](../testing/06-api-contract-and-integration-testing.md)
+- Architecture choices around rendering models, multi-zones and delivery: [frontend-architecture/](../frontend-architecture/README.md)
+- CI/CD pipelines, containers, previews and release automation for Next.js apps: [ci-cd-web/](../ci-cd-web/README.md)
 - Mobile counterpart: [react-native/](../react-native/README.md)
 
 
