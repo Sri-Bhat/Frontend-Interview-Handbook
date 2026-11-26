@@ -25,9 +25,13 @@ Production-oriented web performance interview preparation for Senior Frontend, S
 
 ## Related Material
 
+- DevTools toolkit and production regression triage: [debugging-scenarios/02](../debugging-scenarios/02-debugging-toolkit-devtools-node-and-editors.md) · [debugging-scenarios/07](../debugging-scenarios/07-production-incidents-observability-and-root-cause-analysis.md)
 - Next.js-specific performance (image/font/script, PPR, instant navigation): [nextjs-and-rendering/](../nextjs-and-rendering/README.md), especially [07 performance](../nextjs-and-rendering/07-performance-optimization.md)
 - React rendering performance: [react/08](../react/08-react-performance-optimization.md) and [react/03](../react/03-concurrent-react-suspense-and-transitions.md)
 - Performance in design interviews: [system-design/](../system-design/README.md)
+- Performance budgets in CI and test strategy: [testing/07](../testing/07-flakiness-ci-and-non-functional-testing.md)
+- Performance as an architectural fitness function (budgets, composition costs): [frontend-architecture/](../frontend-architecture/README.md)
+- CSS, animation and layout fundamentals behind rendering performance: [html-and-css/](../html-and-css/README.md)
 - Mobile counterpart: [react-native/](../react-native/README.md)
 - Browser mechanics behind these metrics (pipeline, event loop, storage, security): [browser-internals/](../browser-internals/README.md)
 - Third-party script risk and CSP/headers trade-offs: [web-security/](../web-security/README.md)
