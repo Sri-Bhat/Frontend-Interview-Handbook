@@ -34,6 +34,7 @@ Production-oriented web security interview preparation for Senior Frontend, Staf
 - Applying these in design interviews (chat, collaborative editor, dashboards): [system-design/](../system-design/README.md)
 - HTTP, Fetch, CORS-adjacent API design, real-time transports and network debugging: [networking-and-apis/](../networking-and-apis/README.md)
 - Mobile counterpart: [react-native/](../react-native/README.md)
+- Securing the delivery pipeline itself (tokens, secrets, third-party actions, runners, provenance): [ci-cd-web/04](../ci-cd-web/04-pipeline-security-secrets-and-supply-chain.md)
 
 ## Version Notes
 
