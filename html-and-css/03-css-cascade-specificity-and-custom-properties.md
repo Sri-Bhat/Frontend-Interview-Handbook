@@ -236,7 +236,7 @@ flowchart TD
 |---|---|
 | `a b` / `a > b` / `a + b` / `a ~ b` | Descendant / child / adjacent sibling / general sibling |
 | `.x`, `#y`, `tag`, `*` | Class, ID, type, universal |
-| `[attr]`, `[attr=v]`, `[attr^=v]`, `[attr$=v]`, `[attr*=v]`, `[attr~=v]`, `[attr|=v]` | Attribute selectors |
+| `[attr]`, `[attr=v]`, `[attr^=v]`, `[attr$=v]`, `[attr*=v]`, `[attr~=v]`, `[attr\|=v]` | Attribute selectors |
 | `::before`, `::after` | Generated content (need `content`) |
 | `::first-line`, `::first-letter`, `::selection`, `::placeholder`, `::marker`, `::backdrop`, `::file-selector-button` | Pseudo-elements |
 | `:root`, `:empty`, `:checked`, `:disabled`, `:required`, `:enabled` | State |
