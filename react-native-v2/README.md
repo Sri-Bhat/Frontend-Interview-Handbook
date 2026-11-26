@@ -33,9 +33,12 @@ Production-oriented React Native interview preparation for Senior Frontend, Mobi
 
 ## Related Material
 
+- Web debugging method and toolkit (remote debugging, source maps): [debugging-scenarios/](../debugging-scenarios/README.md)
 - React fundamentals and hooks behind RN rendering: [react/](../react/README.md); typed APIs and Strict TypeScript migration: [typescript/](../typescript/README.md)
 - Web counterparts: performance [web-performance/](../web-performance/README.md), security [web-security/](../web-security/README.md), protocols and resilience [networking-and-apis/](../networking-and-apis/README.md), browser engine [browser-internals/](../browser-internals/README.md)
-- Test strategy and RN testing practice: [testing/](../testing/README.md) (see [testing/08 §6](../testing/08-testing-in-practice-tdd-architecture-mobile-and-ai.md#6-testing-react-native-apps)); mobile system-design framing: [system-design/](../system-design/README.md)
+- Test strategy and RN testing practice: [testing/](../testing/README.md) (see [testing/08 §6](../testing/08-testing-in-practice-tdd-architecture-mobile-and-ai.md#6-testing-react-native-apps)); mobile system-design framing: [system-design/](../system-design/README.md); web-and-mobile architecture, monorepos and delivery: [frontend-architecture/](../frontend-architecture/README.md); web CI/CD counterpart (GitHub Actions, security, deployment): [ci-cd-web/](../ci-cd-web/README.md)
+- Web accessibility foundations and testing (WCAG 2.2, screen readers, patterns) that mobile accessibility builds on: [accessibility/](../accessibility/README.md) (React Native section: [accessibility/08 §5](../accessibility/08-accessibility-in-react-nextjs-mobile-and-scenarios.md#5-react-native-and-mobile-accessibility))
+
 
 ## Version Notes
 
