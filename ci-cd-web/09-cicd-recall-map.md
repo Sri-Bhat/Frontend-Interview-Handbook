@@ -129,7 +129,7 @@ flowchart TD
 | DORA | Change lead time, deployment frequency, failed deployment recovery time, change fail rate, deployment rework rate |
 | Environment protections | Required reviewers ≤ 6 (1 approval default), wait timer, branch/tag restrictions, scoped secrets |
 | Docs example action majors | `actions/checkout@v6`, `actions/setup-node@v7`, `actions/cache@v4` |
-| Org defaults | `bby-ubuntu`; `bby-(ubuntu|docker)-x?large` sparingly; Artifactory npm-virtual / containers / java-virtual; GIAM action |
+| Org defaults | `bby-ubuntu`; `bby-(ubuntu\|docker)-x?large` sparingly; Artifactory npm-virtual / containers / java-virtual; GIAM action |
 
 ---
 
