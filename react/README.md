@@ -25,6 +25,7 @@ Deep-dive guides for senior React interviews, verified against the official reac
 
 ## Related Material in This Repository
 
+- React and Next.js debugging scenarios (loops, stale state, hydration): [debugging-scenarios/04](../debugging-scenarios/04-react-and-nextjs-debugging-scenarios.md)
 - Browser-level performance (metrics, main thread, rendering, delivery): [web-performance/](../web-performance/README.md).
 - Browser internals (event loop, rendering pipeline, events, storage, security): [browser-internals/](../browser-internals/README.md).
 - Web security (XSS and Trusted Types, CSP, CSRF, auth/BFF, Server Functions as public endpoints): [web-security/](../web-security/README.md).
@@ -33,6 +34,9 @@ Deep-dive guides for senior React interviews, verified against the official reac
 - JavaScript fundamentals used heavily here (closures, event loop, async): [js/03-advanced-fundamentals-and-coding.md](../js/03-advanced-fundamentals-and-coding.md).
 - TypeScript for React (React 19 type changes, typed hooks/context, data layers): [typescript/05-typescript-with-react-and-apis.md](../typescript/05-typescript-with-react-and-apis.md).
 - Next.js App Router (RSC in practice, caching, streaming/PPR, Server Actions): [nextjs-and-rendering/README.md](../nextjs-and-rendering/README.md).
+- Application-level architecture (module boundaries, state ownership, monorepos, migrations): [frontend-architecture/](../frontend-architecture/README.md).
+- HTML semantics, forms and CSS behind React UI work: [html-and-css/](../html-and-css/README.md).
+- Accessible React components, focus management and testing: [accessibility/](../accessibility/README.md).
 
 ## Version Notes
 
