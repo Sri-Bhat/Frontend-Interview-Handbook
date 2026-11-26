@@ -379,7 +379,7 @@ src/
 - **Architecture Decision Records (ADRs)** to capture trade-offs.
 
 ### Micro-frontends (when and why)
-Justified for **independent deploys across many teams** (Module Federation, single-spa, iframes/web components). Costs: runtime integration, shared dependency/version drift, performance, UX consistency, testing complexity. Prefer a **modular monolith + monorepo** until organisational scaling forces separation.
+Justified for **independent deploys across many teams** (Module Federation, single-spa, iframes/web components). Costs: runtime integration, shared dependency/version drift, performance, UX consistency, testing complexity. Prefer a **modular monolith + monorepo** until organisational scaling forces separation. Deep dives: [frontend-architecture/02 modularity and boundaries](../frontend-architecture/02-modularity-layering-and-boundaries.md), [05 monorepos](../frontend-architecture/05-monorepos-build-systems-and-code-sharing.md), [06 micro-frontends](../frontend-architecture/06-micro-frontends-and-composition.md).
 
 ---
 
