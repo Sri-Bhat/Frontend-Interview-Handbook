@@ -27,6 +27,7 @@ Production-oriented networking and API interview preparation for Senior Frontend
 
 ## Related Material
 
+- CORS, cookie, auth-loop and cache-staleness scenarios: [debugging-scenarios/06](../debugging-scenarios/06-network-api-auth-and-caching-scenarios.md)
 - Delivery/performance side of the network (compression, CDN, caching strategy, bfcache, speculative loading): [web-performance/03](../web-performance/03-network-caching-and-delivery.md)
 - Navigation-time networking (DNS, TLS, redirects, lifecycle): [browser-internals/02](../browser-internals/02-navigation-and-page-lifecycle.md); storage and caching APIs: [browser-internals/05](../browser-internals/05-browser-storage-and-caching-apis.md)
 - Security of APIs and clients (CORS, CSRF, auth/BFF, headers, SSRF, WebSocket hijacking): [web-security/](../web-security/README.md)
