@@ -165,7 +165,7 @@ flowchart TD
 - **Public module APIs**; feature folders; lint boundaries (see [react/07](../react/07-component-patterns-and-architecture.md)).
 
 ### Micro-frontends (only when justified)
-Independent deploys across many teams. Integration: build-time packages, Module Federation, iframes, web components. Costs: duplicated deps, UX drift, shared state/auth, perf overhead. Default to a **modular monolith**.
+Independent deploys across many teams. Integration: build-time packages, Module Federation, iframes, web components. Costs: duplicated deps, UX drift, shared state/auth, perf overhead. Default to a **modular monolith**. Deep dive (Module Federation, import maps, Multi-Zones, decision framework): [frontend-architecture/06](../frontend-architecture/06-micro-frontends-and-composition.md).
 
 ### BFF and API gateway
 A **Backend-for-Frontend** aggregates/reshapes service calls for one client (fewer round trips, tailored payloads, token handling). Trade-off: another service to own.
