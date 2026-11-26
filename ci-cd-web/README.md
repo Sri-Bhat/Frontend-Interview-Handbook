@@ -26,6 +26,8 @@ Production-oriented interview preparation for Senior Frontend, Tech Lead, Platfo
 
 ## Related Material
 
+- Using delivery metrics responsibly and leading engineering-productivity initiatives: [leadership/04](../leadership/04-planning-estimation-prioritization-and-delivery.md) · [leadership/06](../leadership/06-leading-technical-initiatives-and-organizational-change.md)
+- Debugging build, dependency and CI-only failures: [debugging-scenarios/08](../debugging-scenarios/08-build-tooling-typescript-dependency-and-ci-debugging.md)
 - Test strategy, flakiness, sharding, CI test pipelines and the testing reference workflow: [testing/](../testing/README.md)
 - Monorepo task graphs, remote caching, release architecture, trunk-based development, DORA and platform engineering: [frontend-architecture/](../frontend-architecture/README.md)
 - Next.js deployment, self-hosting, multi-instance, Docker and release strategies: [nextjs-and-rendering/08](../nextjs-and-rendering/08-deployment-runtimes-and-operations.md)
