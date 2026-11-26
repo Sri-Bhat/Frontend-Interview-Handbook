@@ -154,7 +154,7 @@ runs:
 
 | Cache | Key | Notes |
 |---|---|---|
-| **Package manager store/cache** | `hashFiles('**/package-lock.json')` (or `pnpm-lock.yaml`) | Prefer `setup-node` built-in `cache: npm|yarn|pnpm` (verified table) — caches the **package manager's global cache**, not `node_modules` |
+| **Package manager store/cache** | `hashFiles('**/package-lock.json')` (or `pnpm-lock.yaml`) | Prefer `setup-node` built-in `cache: npm\|yarn\|pnpm` (verified table) — caches the **package manager's global cache**, not `node_modules` |
 | **Build tool caches** | Lockfile + config hash + source hash prefix restore-keys | `.next/cache`, Vite/webpack/Turbopack caches, `tsc --incremental` `.tsbuildinfo`, ESLint cache, Jest/Vitest caches |
 | **Task-runner local cache** | Lockfile + task hash | Nx/Turborepo local caches (see §6) |
 | **Playwright browsers** | `playwright-${{ runner.os }}-${{ version }}` | `~/.cache/ms-playwright`; run `install-deps` separately |
