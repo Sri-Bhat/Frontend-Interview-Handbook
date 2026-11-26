@@ -24,12 +24,17 @@ Production-oriented frontend system design interview preparation for Senior Fron
 
 ## Related Material
 
+- Leadership and behavioral interview preparation (influence, decisions, scenarios): [leadership/](../leadership/README.md)
 - Web performance fundamentals behind the performance sections of every case study: [web-performance/](../web-performance/README.md)
 - Browser internals (storage, security model, event loop, DOM/events): [browser-internals/](../browser-internals/README.md)
 - Web security for design interviews (auth architecture, XSS in chat/editors, CSRF, third-party scripts): [web-security/](../web-security/README.md)
 - Networking and API building blocks (REST/GraphQL, real-time transports, resilience, offline): [networking-and-apis/](../networking-and-apis/README.md)
 - React internals and performance: [react/](../react/README.md) (virtualisation, transitions, Server Components, state/data fetching)
 - TypeScript patterns for API boundaries and design systems: [typescript/](../typescript/README.md)
+- Test strategy and CI design: [testing/](../testing/README.md)
+- Architecture decisions behind the designs (boundaries, state ownership, monorepos, micro-frontends, delivery): [frontend-architecture/](../frontend-architecture/README.md)
+- HTML/CSS foundations (layout, responsive design, forms, tokens and theming): [html-and-css/](../html-and-css/README.md)
+- Accessibility as a design-system contract (patterns, keyboard, testing): [accessibility/](../accessibility/README.md)
 - Mobile counterpart: [react-native/](../react-native/README.md)
 
 ## Version Notes
