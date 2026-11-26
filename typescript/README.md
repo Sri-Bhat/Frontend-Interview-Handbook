@@ -25,6 +25,7 @@ Deep-dive guides for senior TypeScript interviews, verified against the TypeScri
 
 - React (web) deep dives: [react/README.md](../react/README.md), especially [component patterns](../react/07-component-patterns-and-architecture.md) and [state & data fetching](../react/06-state-management-and-data-fetching.md).
 - React Native (Codegen/TurboModules): [react-native/03-native-integration.md](../react-native/03-native-integration.md).
+- TypeScript at module boundaries, in monorepos and during migrations: [frontend-architecture/](../frontend-architecture/README.md).
 - JavaScript fundamentals: [js/03-advanced-fundamentals-and-coding.md](../js/03-advanced-fundamentals-and-coding.md).
 
 ## Version Notes (verified 2026-11-10)
