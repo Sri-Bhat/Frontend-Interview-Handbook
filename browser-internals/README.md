@@ -25,13 +25,17 @@ Production-oriented browser internals interview preparation for Senior Frontend,
 
 ## Related Material
 
+- Debugging browser-specific, storage and environment bugs: [debugging-scenarios/05](../debugging-scenarios/05-browser-compatibility-storage-and-environment-bugs.md)
 - Performance consequences of these internals (metrics, loading, INP, CLS, delivery): [web-performance/](../web-performance/README.md)
 - Framework-level rendering and security built on top: [nextjs-and-rendering/](../nextjs-and-rendering/README.md), [react/](../react/README.md)
 - JavaScript language fundamentals (closures, `this`, prototypes, async): [js/03](../js/03-advanced-fundamentals-and-coding.md)
 - Applying these in design interviews: [system-design/](../system-design/README.md)
 - Application-level security built on this browser security model (XSS, CSP, CSRF, OAuth/BFF, supply chain): [web-security/](../web-security/README.md)
 - HTTP semantics, Fetch, API design, real-time transports and network debugging: [networking-and-apis/](../networking-and-apis/README.md)
+- Author-level HTML and CSS (semantics, forms, cascade usage, layout, responsive design, animation, coding rounds): [html-and-css/](../html-and-css/README.md)
+- Accessibility tree in practice (ARIA, names, keyboard/focus, assistive technology): [accessibility/](../accessibility/README.md)
 
+  
 ## Version Notes
 
 - Verified directly against MDN on 2026-11-12: **Same-origin policy** (modified Sep 2026) and **Storage quotas and eviction criteria** (modified Jan 2026) — origin rules, cross-origin access categories, cookie origin model, storage bucketing, best-effort vs persistent storage, per-engine quotas, eviction behaviour including Safari's 7-day proactive eviction.
