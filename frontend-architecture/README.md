@@ -26,6 +26,8 @@ Production-oriented interview preparation for Senior Frontend, Staff/Lead, Tech 
 
 ## Related Material
 
+- Leadership, influence, mentoring, planning and behavioral interviews: [leadership/](../leadership/README.md)
+- Production incidents, observability and RCA scenarios: [debugging-scenarios/07](../debugging-scenarios/07-production-incidents-observability-and-root-cause-analysis.md)
 - Component-level patterns and a short folder-architecture section: [react/07](../react/07-component-patterns-and-architecture.md); state libraries: [react/06](../react/06-state-management-and-data-fetching.md)
 - End-to-end design interviews using these building blocks: [system-design/](../system-design/README.md) (framework, design system, collaborative editor)
 - Rendering and deployment models: [nextjs-and-rendering/](../nextjs-and-rendering/README.md)
@@ -36,6 +38,7 @@ Production-oriented interview preparation for Senior Frontend, Staff/Lead, Tech 
 - TypeScript at boundaries and in monorepos: [typescript/](../typescript/README.md)
 - Mobile counterpart: [react-native/](../react-native/README.md) (app architecture, OTA/store releases, CI/CD)
 - CSS architecture, theming and design tokens in depth: [html-and-css/07](../html-and-css/07-css-architecture-theming-and-tooling.md)
+- Accessibility in the delivery process (definition of done, gates, audits): [accessibility/07](../accessibility/07-testing-tooling-and-accessibility-in-the-delivery-process.md)
 - Pipeline design, GitHub Actions, deployment strategies and release automation in depth: [ci-cd-web/](../ci-cd-web/README.md)
 
 ## Version Notes
