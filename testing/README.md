@@ -26,11 +26,16 @@ Production-oriented testing interview preparation for Senior Frontend, Staff/Lea
 
 ## Related Material
 
+- Debugging methodology, Playwright debugging and CI-only failures: [debugging-scenarios/](../debugging-scenarios/README.md)
 - Components, hooks and state under test: [react/](../react/README.md); typed test utilities and contracts: [typescript/](../typescript/README.md)
 - Server Components, Server Actions, caching behaviour to verify: [nextjs-and-rendering/](../nextjs-and-rendering/README.md)
 - Performance budgets and lab/field measurement: [web-performance/](../web-performance/README.md); browser behaviour behind jsdom limits and visual differences: [browser-internals/](../browser-internals/README.md)
 - Security testing guardrails and CI hardening: [web-security/](../web-security/README.md); API clients, contracts and resilience: [networking-and-apis/](../networking-and-apis/README.md)
 - Designing test strategy in interviews: [system-design/](../system-design/README.md); mobile counterpart and CI/CD: [react-native/](../react-native/README.md)
+- Test architecture within module boundaries, monorepo CI and delivery gates: [frontend-architecture/](../frontend-architecture/README.md)
+- What to test in CSS/HTML (visual, forms, responsive behavior): [html-and-css/](../html-and-css/README.md)
+- Accessibility testing in depth (axe, keyboard E2E, ARIA snapshots, screen readers, CI gates): [accessibility/07](../accessibility/07-testing-tooling-and-accessibility-in-the-delivery-process.md)
+- Pipeline design, caching, security and deployment gates around the test suite: [ci-cd-web/](../ci-cd-web/README.md)
 
 ## Version Notes
 
